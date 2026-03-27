@@ -1,0 +1,157 @@
+{
+	"pages": [
+		{
+			"path": "pages/home/home",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/my/my-page",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
+		},
+		{
+			"path": "pages/admin/admin-home",
+			"style": {
+				"navigationBarTitleText": "管理后台"
+			}
+		},
+		{
+			"path": "pages/volunteer-service/volunteer-list",
+			"style": {
+				"navigationBarTitleText": "志愿服务"
+			}
+		},
+		{
+			"path": "pages/volunteer-service/volunteer-detail",
+			"style": {
+				"navigationBarTitleText": "积分说明"
+			}
+		},
+		{
+			"path": "pages/volunteer-service/volunteer-checkin",
+			"style": {
+				"navigationBarTitleText": "志愿服务打卡"
+			}
+		},
+		{
+			"path": "pages/volunteer-service/volunteer-records",
+			"style": {
+				"navigationBarTitleText": "打卡记录"
+			}
+		},
+		{
+			"path": "pages/volunteer-service/volunteer-record-detail",
+			"style": {
+				"navigationBarTitleText": "记录详情"
+			}
+		},
+		{
+			"path": "pages/honor-award/honor-list",
+			"style": {
+				"navigationBarTitleText": "荣誉获奖"
+			}
+		},
+		{
+			"path": "pages/honor-award/honor-apply",
+			"style": {
+				"navigationBarTitleText": "荣誉申报"
+			}
+		},
+		{
+			"path": "pages/my/my-applications",
+			"style": {
+				"navigationBarTitleText": "我的申请"
+			}
+		},
+		{
+			"path": "pages/my/message-subscribe",
+			"style": {
+				"navigationBarTitleText": "消息订阅"
+			}
+		},
+		{
+			"path": "pages/my/profile",
+			"style": {
+				"navigationBarTitleText": "个人信息"
+			}
+		},
+		{
+			"path": "pages/my/privacy-settings",
+			"style": {
+				"navigationBarTitleText": "隐私设置"
+			}
+		},
+		{
+			"path": "pages/my/account-cancel",
+			"style": {
+				"navigationBarTitleText": "账号注销"
+			}
+		},
+		{
+			"path": "pages/admin/admin-import",
+			"style": {
+				"navigationBarTitleText": "批量数据导入"
+			}
+		},
+		{
+			"path": "pages/admin/admin-audit",
+			"style": {
+				"navigationBarTitleText": "数据审核"
+			}
+		},
+		{
+			"path": "pages/admin/admin-audit-detail",
+			"style": {
+				"navigationBarTitleText": "审核详情"
+			}
+		},
+		{
+			"path": "pages/admin/admin-export",
+			"style": {
+				"navigationBarTitleText": "全量数据导出"
+			}
+		},
+		{
+			"path": "pages/admin/admin-logs",
+			"style": {
+				"navigationBarTitleText": "操作日志"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "银才荟",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"custom": true,
+		"color": "#8C8C8C",
+		"selectedColor": "#1677ff",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/home/home",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/my/my-page",
+				"text": "我的"
+			},
+			{
+				"pagePath": "pages/admin/admin-home",
+				"text": "管理后台"
+			}
+		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+		}
+	},
+	"uniIdRouter": {}
+}
