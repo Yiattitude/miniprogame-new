@@ -220,4 +220,10 @@ textarea,
   min-height: 28px;
   padding: 0 8px;
 }
+
+/* 隐藏原生 tabBar，使用自定义组件 GlobalBottomNav 替代。 */
+uni-tabbar,
+.uni-tabbar {
+  display: none !important;
+}
 </style>

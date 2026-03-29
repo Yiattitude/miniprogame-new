@@ -81,17 +81,22 @@ const logout = () => {
   })
 }
 
-/** 页面显示时同步积分，并再次校验登录与认证信息。 */
+/** 标记是否已初始化积分数据，避免重复加载。 */
+let initialized = false
+
+/** 页面显示时同步积分，仅在首次加载时获取数据。 */
 onShow(() => {
   if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
     return
   }
 
+  if (initialized) return
   const scoreSummary = getOverallScoreSummary()
   userStore.setPoints({
     volunteerPoints: scoreSummary.volunteerPoints,
     honorPoints: scoreSummary.honorPoints
   })
+  initialized = true
 })
 </script>
 

@@ -39,6 +39,9 @@ import { getOverallScoreSummary } from '@/utils/mockData'
 const userStore = useUserStore()
 const totalPoints = computed(() => userStore.totalPoints)
 
+/** 标记是否已初始化积分数据，避免重复加载。 */
+let initialized = false
+
 /** 进入志愿服务模块。 */
 const goVolunteer = () => {
   uni.navigateTo({ url: '/pages/volunteer/index' })
@@ -49,13 +52,15 @@ const goHonor = () => {
   uni.navigateTo({ url: '/pages/honor/index' })
 }
 
-/** 页面显示时同步演示积分。 */
+/** 页面显示时同步演示积分，仅在首次加载时获取数据。 */
 const syncPoints = () => {
+  if (initialized) return
   const scoreSummary = getOverallScoreSummary()
   userStore.setPoints({
     volunteerPoints: scoreSummary.volunteerPoints,
     honorPoints: scoreSummary.honorPoints
   })
+  initialized = true
 }
 
 onShow(() => {

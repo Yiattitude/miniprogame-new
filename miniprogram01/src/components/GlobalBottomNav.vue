@@ -16,10 +16,10 @@
       :class="{ 'bottom-nav__item--active': current === item.key }"
       @click="switchPage(item)"
     >
-      <u-icon
-        :name="item.icon"
-        size="24"
-        :color="current === item.key ? activeColor : inactiveColor"
+      <image
+        :src="current === item.key ? item.activeIcon : item.icon"
+        class="bottom-nav__icon"
+        mode="widthFix"
       />
       <text class="bottom-nav__text" :class="{ 'bottom-nav__text--active': current === item.key }">
         {{ item.text }}
@@ -50,8 +50,20 @@ const activeColor = '#c2410c'
 const inactiveColor = '#8c8c8c'
 
 const navItems = [
-  { key: 'index', text: '首页', pagePath: '/pages/index/index', icon: 'home' },
-  { key: 'mine', text: '我的', pagePath: '/pages/mine/mine', icon: 'account' }
+  { 
+    key: 'index', 
+    text: '首页', 
+    pagePath: '/pages/index/index', 
+    icon: '/static/tabbar/home.png',
+    activeIcon: '/static/tabbar/home-active.png'
+  },
+  { 
+    key: 'mine', 
+    text: '我的', 
+    pagePath: '/pages/mine/mine', 
+    icon: '/static/tabbar/mine.png',
+    activeIcon: '/static/tabbar/mine-active.png'
+  }
 ]
 
 /** 返回上一页；若当前没有可回退页面，则兜底回到首页。 */
@@ -101,6 +113,12 @@ const switchPage = (item) => {
   align-items: center;
   justify-content: center;
   gap: 5px;
+}
+
+.bottom-nav__icon {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .bottom-nav__text {
