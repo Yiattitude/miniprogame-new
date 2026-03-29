@@ -1,6 +1,6 @@
 <template>
   <view class="page page-with-nav">
-    <view class="section-title">管理后台</view>
+    <view class="section-title text-center">管理后台</view>
     <view class="summary-grid">
       <view class="summary-card volunteer">
         <text class="summary-label">待审志愿服务</text>
@@ -43,7 +43,7 @@
       </view>
     </view>
 
-    <GlobalBottomNav current="mine" />
+    <GlobalBottomNav current="admin" :showBack="false" />
   </view>
 </template>
 
@@ -70,6 +70,7 @@ const goTo = (url) => {
 
 /** 页面展示时刷新统计与日志，并同步 TabBar 选中状态。 */
 onShow(() => {
+  uni.hideTabBar()
   summary.value = getAdminDashboardSummary()
   logs.value = getOperationLogs().slice(0, 5)
 })

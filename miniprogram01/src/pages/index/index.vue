@@ -1,30 +1,47 @@
 <template>
-  <view class="page">
+  <view class="page page-with-nav">
     <view class="header">
       <text class="app-title">银才荟</text>
+
+       <view class="welcome-card">
+      <view class="welcome-content">
+        <text class="welcome-title">欢迎使用老同志正能量发挥积分管理平台</text>
+      </view>
+      
+    </view>
       <view class="points-card">
         <text class="points-label">总积分</text>
         <text class="points-value">{{ totalPoints }}</text>
       </view>
     </view>
 
-    <view class="section-title">快捷入口</view>
     <view class="entry-list">
       <view class="entry-card" @click="goVolunteer">
-        <view class="entry-info">
-          <text class="entry-title">志愿服务</text>
-          <text class="entry-desc">志愿打卡申报与记录</text>
+        <view class="entry-card__decoration entry-card__decoration--red"></view>
+        <view class="entry-content">
+          <view class="entry-icon">
+            <uni-icons type="heart-filled" size="28" color="#ff4d4f"></uni-icons>
+          </view>
+          <view class="entry-info">
+            <text class="entry-title">志愿服务</text>
+            <text class="entry-desc">申报志愿活动，累计积分</text>
+          </view>
         </view>
-        <u-button type="primary" text="进入" size="large" />
       </view>
       <view class="entry-card" @click="goHonor">
-        <view class="entry-info">
-          <text class="entry-title">荣誉获奖</text>
-          <text class="entry-desc">荣誉申报与积分登记</text>
+        <view class="entry-card__decoration entry-card__decoration--yellow"></view>
+        <view class="entry-content">
+          <view class="entry-icon">
+            <uni-icons type="medal" size="28" color="#faad14"></uni-icons>
+          </view>
+          <view class="entry-info">
+            <text class="entry-title">荣誉获奖</text>
+            <text class="entry-desc">申报荣誉奖项，累计积分</text>
+          </view>
         </view>
-        <u-button type="primary" text="进入" size="large" />
       </view>
     </view>
+    <GlobalBottomNav current="index" :showBack="false" />
   </view>
 </template>
 
@@ -33,6 +50,8 @@ import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store'
 import { getOverallScoreSummary } from '@/utils/mockData'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
 /** 首页，展示总积分和两大业务入口。 */
 
@@ -64,6 +83,7 @@ const syncPoints = () => {
 }
 
 onShow(() => {
+  uni.hideTabBar()
   syncPoints()
 })
 </script>
@@ -79,6 +99,7 @@ onShow(() => {
 .app-title {
   font-size: 24px;
   font-weight: 700;
+  text-align: center;
   color: #0f172a;
 }
 
@@ -102,6 +123,28 @@ onShow(() => {
   color: #2563eb;
 }
 
+.welcome-card {
+  background: linear-gradient(135deg, #1677ff, #5b8cff);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.2);
+}
+
+.welcome-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.welcome-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
 .entry-list {
   display: flex;
   flex-direction: column;
@@ -110,20 +153,59 @@ onShow(() => {
 
 .entry-card {
   border-radius: 16px;
-  padding: 18px;
+  padding: 18px 18px 18px 24px;
   min-height: 112px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   border: 1px solid #e2e8f0;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.entry-card__decoration {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-radius: 6px 0 0 6px;
+}
+
+.entry-card__decoration--red {
+  background: linear-gradient(180deg, #ff4d4f, #ff7875);
+}
+
+.entry-card__decoration--yellow {
+  background: linear-gradient(180deg, #faad14, #ffc53d);
+}
+
+.entry-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.entry-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .entry-info {
   display: flex;
   flex-direction: column;
+  gap: 6px;
   flex: 1;
-  gap: 8px;
 }
 
 .entry-title {
@@ -133,9 +215,9 @@ onShow(() => {
 }
 
 .entry-desc {
-  font-size: 15px;
-  color: #334155;
-  line-height: 1.7;
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
 }
 
 .entry-card :deep(.u-button) {

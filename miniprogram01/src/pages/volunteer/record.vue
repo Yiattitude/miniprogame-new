@@ -1,21 +1,29 @@
 <template>
   <view class="page page-with-nav">
-    <view class="section-title">{{ pageTitle }}</view>
+    <view class="page-header">
+      <text class="page-title">{{ pageTitle }}</text>
+    </view>
 
     <view class="filter-row">
-      <u-input
-        v-model="selectedYear"
-        readonly
-        placeholder="选择年度"
-        @click="showYearPicker = true"
-      />
+      <view class="year-selector" @click="showYearPicker = true">
+        <text class="year-text">{{ selectedYear }}年度 ▼</text>
+      </view>
     </view>
 
     <view v-if="records.length > 0" class="record-list">
       <view v-for="record in records" :key="record.id" class="record-card" @click="showDetail(record)">
-        <text class="record-title">{{ record.title }}</text>
-        <text class="record-points">审核积分：{{ record.approvedPoints }} 分</text>
-        <text class="record-time">活动时间：{{ record.activityTime }}</text>
+        <view class="card-header">
+          <text class="record-title">{{ record.title }}</text>
+          <text class="record-points">+ {{ record.approvedPoints || record.points || 0 }}分</text>
+        </view>
+        <view class="card-body">
+          <text class="record-time">{{ record.activityTime }}</text>
+        </view>
+        <view class="card-footer">
+          <text class="status-badge" :class="getBadgeClass(record.statusText)">
+            {{ record.statusText }}
+          </text>
+        </view>
       </view>
     </view>
 
@@ -50,7 +58,7 @@
             <text class="detail-label">审核状态</text>
             <text class="detail-text">{{ selectedRecord.statusText }}</text>
           </view>
-          <view class="detail-row">
+          <view class="detail-row" v-if="selectedRecord.evidenceFiles && selectedRecord.evidenceFiles.length">
             <text class="detail-label">佐证材料</text>
             <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') }}</text>
           </view>
@@ -82,10 +90,12 @@ const showYearPicker = ref(false)
 const selectedYear = ref(String(currentYear))
 const moduleId = ref('')
 const selectedRecord = ref(null)
+
 const pageTitle = computed(() => {
   const moduleInfo = getVolunteerModule(moduleId.value)
-  return moduleInfo ? `${moduleInfo.name}打卡记录` : '打卡记录'
+  return moduleInfo ? `${moduleInfo.name}打卡记录` : '我的打卡记录'
 })
+
 const records = computed(() =>
   getVolunteerRecordList({
     year: selectedYear.value,
@@ -113,61 +123,151 @@ const showDetail = (record) => {
 const closeDetail = () => {
   selectedRecord.value = null
 }
+
+const getBadgeClass = (status) => {
+  if (status === '已通过') return 'badge-success'
+  if (status === '待审核') return 'badge-pending'
+  if (status === '已驳回') return 'badge-reject'
+  return 'badge-default'
+}
 </script>
 
 <style scoped>
+.page {
+  background-color: #f5f6fa;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.page-header {
+  padding: 30px 20px 20px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #333333;
+  letter-spacing: 1px;
+}
+
 .filter-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px;
   margin-bottom: 16px;
+}
+
+.year-selector {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+.year-text {
+  font-size: 15px;
+  color: #333333;
 }
 
 .record-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 0 16px 20px;
 }
 
 .record-card {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  gap: 12px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .record-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 19px;
+  font-weight: 800;
+  color: #333333;
 }
 
-.record-points,
+.record-points {
+  font-size: 20px;
+  font-weight: bold;
+  color: #0076FF;
+}
+
+.card-body {
+  margin-top: 4px;
+}
+
 .record-time {
+  font-size: 16px;
+  color: #7B7898;
+}
+
+.card-footer {
+  margin-top: 8px;
+  display: flex;
+}
+
+.status-badge {
   font-size: 13px;
-  color: #475569;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.badge-success {
+  background-color: #e6f7eb;
+  color: #00a854;
+}
+
+.badge-pending {
+  background-color: #fff2e8;
+  color: #d88949;
+}
+
+.badge-reject {
+  background-color: #feeceb;
+  color: #ff4d4f;
+}
+
+.badge-default {
+  background-color: #f0f0f0;
+  color: #666666;
 }
 
 .empty-card {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 28px 20px;
+  border-radius: 16px;
+  padding: 40px 20px;
+  margin: 0 16px;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .empty-text {
-  font-size: 14px;
-  color: #94a3b8;
+  font-size: 15px;
+  color: #999999;
 }
 
+/* 详情弹窗样式 */
 .detail-mask {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: flex-end;
-  z-index: 30;
+  z-index: 1000;
 }
 
 .detail-panel {
@@ -175,41 +275,42 @@ const closeDetail = () => {
   max-height: 80vh;
   background: #ffffff;
   border-radius: 20px 20px 0 0;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .detail-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+  font-size: 20px;
+  font-weight: 800;
+  color: #333333;
+  margin-bottom: 24px;
+  display: block;
 }
 
 .detail-grid {
-  margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  margin-bottom: 30px;
 }
 
 .detail-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .detail-label {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: #999999;
 }
 
 .detail-text {
-  font-size: 15px;
-  color: #1f2937;
-  line-height: 1.6;
+  font-size: 16px;
+  color: #333333;
 }
 
 .detail-actions {
-  margin-top: 20px;
+  margin-top: 10px;
 }
 </style>

@@ -29,7 +29,10 @@
 </template>
 
 <script setup>
-/** 全局底部导航，只保留首页和我的两个固定入口。 */
+import { computed } from 'vue'
+import { useUserStore } from '@/store'
+
+/** 全局底部导航，支持根据管理员权限动态扩展。 */
 
 const props = defineProps({
   current: {
@@ -46,25 +49,39 @@ const props = defineProps({
   }
 })
 
+const userStore = useUserStore()
+
 const activeColor = '#c2410c'
 const inactiveColor = '#8c8c8c'
 
-const navItems = [
-  { 
-    key: 'index', 
-    text: '首页', 
-    pagePath: '/pages/index/index', 
-    icon: '/static/tabbar/home.png',
-    activeIcon: '/static/tabbar/home-active.png'
-  },
-  { 
-    key: 'mine', 
-    text: '我的', 
-    pagePath: '/pages/mine/mine', 
-    icon: '/static/tabbar/mine.png',
-    activeIcon: '/static/tabbar/mine-active.png'
+const navItems = computed(() => {
+  const items = [
+    { 
+      key: 'index', 
+      text: '首页', 
+      pagePath: '/pages/index/index', 
+      icon: '/static/tabbar/home.png',
+      activeIcon: '/static/tabbar/home-active.png'
+    },
+    { 
+      key: 'mine', 
+      text: '我的', 
+      pagePath: '/pages/mine/mine', 
+      icon: '/static/tabbar/mine.png',
+      activeIcon: '/static/tabbar/mine-active.png'
+    }
+  ]
+  if (userStore.isAdmin) {
+    items.push({
+      key: 'admin',
+      text: '管理',
+      pagePath: '/pages/admin/index',
+      icon: '/static/tabbar/admin.png',
+      activeIcon: '/static/tabbar/admin-active.png'
+    })
   }
-]
+  return items
+})
 
 /** 返回上一页；若当前没有可回退页面，则兜底回到首页。 */
 const goBack = () => {
@@ -78,7 +95,7 @@ const goBack = () => {
   uni.reLaunch({ url: '/pages/index/index' })
 }
 
-/** 从任意页面切换到首页或我的，优先使用原生 TabBar 提升切换速度。 */
+/** 切换到对应的核心页面。 */
 const switchPage = (item) => {
   if (props.current === item.key) return
   uni.switchTab({ url: item.pagePath })
