@@ -164,6 +164,17 @@ onShow(() => {
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.entry-card:active {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.12),
+    0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .entry-card__decoration {
