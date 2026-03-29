@@ -5,15 +5,9 @@
 
        <view class="welcome-card">
       <view class="welcome-content">
-        <text class="welcome-title">欢迎使用老同志正能量发挥积分管理平台</text>
+        <text class="welcome-title">欢迎使用银才荟—志愿服务积分管理平台</text>
       </view>
       
-    </view>
-      <view class="points-card">
-        <text class="points-label">总积分</text>
-        <text class="points-value">{{ totalPoints }}</text>
-      </view>
-    </view>
 
     <view class="entry-list">
       <view class="entry-card" @click="goVolunteer">
