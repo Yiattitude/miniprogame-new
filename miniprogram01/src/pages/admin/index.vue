@@ -77,6 +77,17 @@ onShow(() => {
 </script>
 
 <style scoped>
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 18px;
+}
+
+.text-center {
+  text-align: center;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

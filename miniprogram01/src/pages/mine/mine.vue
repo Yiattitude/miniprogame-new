@@ -33,14 +33,23 @@
 
     <!-- 功能入口 -->
     <view class="list-container">
-      <view class="white-card padding-0">
-        <u-cell-group :border="false">
-          <u-cell title="我的申请" isLink @click="goTo('/pages/application/index')" :border="true" />
-          <u-cell title="消息订阅" :label="subscribeStatusLabel" isLink @click="handleSubscribe" :border="true" />
-          <u-cell title="个人信息" @click="showProfile" :border="true" />
-          <u-cell title="隐私设置" isLink @click="goTo('/pages/privacy/index')" :border="true" />
-          <u-cell title="退出登录" @click="logout" :border="false" />
-        </u-cell-group>
+      <view class="module-list">
+        <view class="module-card" @click="goTo('/pages/application/index')">
+          <text class="module-title">我的申请</text>
+          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
+        </view>
+        <view class="module-card" @click="showProfile">
+          <text class="module-title">个人信息</text>
+          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
+        </view>
+        <view class="module-card" @click="goTo('/pages/privacy/index')">
+          <text class="module-title">隐私设置</text>
+          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
+        </view>
+        <view class="module-card" @click="logout">
+          <text class="module-title">退出登录</text>
+          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
+        </view>
       </view>
     </view>
 
@@ -52,26 +61,21 @@
 import { onShow } from '@dcloudio/uni-app'
 import { computed } from 'vue'
 import { useUserStore } from '@/store'
-import { ensureComplianceReady, getSubscribeStatusLabel, requestAuditSubscribeMessage } from '@/utils/auth'
+import { ensureComplianceReady } from '@/utils/auth'
 import { showSuccessToast } from '@/utils/feedback'
 import { getOverallScoreSummary } from '@/utils/mockData'
 import { maskName, maskPhone } from '@/utils/rules'
 import Chart from '@/components/Chart.vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
 /** 我的页面，展示积分、个人信息与订阅状态。 */
 
 const userStore = useUserStore()
-const subscribeStatusLabel = computed(() => getSubscribeStatusLabel(userStore.subscribeAuditResult))
 
 /** 跳转到指定功能页。 */
 const goTo = (url) => {
   uni.navigateTo({ url })
-}
-
-/** 用户手动再次申请审核通知订阅。 */
-const handleSubscribe = async () => {
-  await requestAuditSubscribeMessage(userStore)
 }
 
 /** 脱敏展示用户认证信息，避免在前端完整暴露敏感字段。 */
@@ -205,27 +209,29 @@ onShow(() => {
   font-weight: bold;
 }
 
-.chart-container, .list-container {
+.list-container {
   padding: 0 16px 20px;
 }
 
-.white-card {
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.module-card {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 20px;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
 }
 
-.padding-0 {
-  padding: 8px 10px;
-}
-
-::v-deep .u-cell__title-text {
-  font-size: 18px !important;
-  font-weight: 800 !important;
-  color: #333333 !important;
-}
-
-::v-deep .u-cell {
-  padding: 16px 12px !important;
+.module-title {
+  font-size: 16px;
+  color: #333333;
+  font-weight: 500;
 }
 </style>
