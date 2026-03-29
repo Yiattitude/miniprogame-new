@@ -159,7 +159,7 @@ import { useUserStore } from '@/store'
 import { showErrorToast } from '@/utils/feedback'
 import { getVolunteerModule } from '@/utils/rules'
 import { checkContentSecurity } from '@/utils/upload'
-import { ensureComplianceReady } from '@/utils/auth'
+import { ensureComplianceReady, requestAuditSubscribeMessage } from '@/utils/auth'
 
 /** 志愿服务申报表单组件，负责积分校验、内容校验和订阅引导。 */
 
@@ -255,9 +255,10 @@ const handleSubmit = async () => {
 
   uni.showModal({
     title: '提交成功',
-    content: '已进入待审核流程，可在"打卡记录"中查看状态。',
+    content: '已进入待审核流程，可在“打卡记录”中查看状态。',
     showCancel: false,
-    success: () => {
+    success: async () => {
+      await requestAuditSubscribeMessage(userStore)
       showCheckinForm.value = false
       Object.assign(form, { activityTime: '', location: '', title: '', content: '', points: '', files: [] })
     }

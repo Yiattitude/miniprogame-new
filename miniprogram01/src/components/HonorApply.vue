@@ -110,7 +110,7 @@ import { useUserStore } from '@/store'
 import { showErrorToast } from '@/utils/feedback'
 import { getHonorLevel } from '@/utils/rules'
 import { checkContentSecurity } from '@/utils/upload'
-import { ensureComplianceReady } from '@/utils/auth'
+import { ensureComplianceReady, requestAuditSubscribeMessage } from '@/utils/auth'
 
 /** 荣誉申报表单组件，负责自动填充分值、内容校验和订阅引导。 */
 
@@ -188,9 +188,10 @@ const handleSubmit = async () => {
   }
   uni.showModal({
     title: '提交成功',
-    content: '已进入待审核流程，可在"我的申请"中查看状态。',
+    content: '已进入待审核流程，可在“我的申请”中查看状态。',
     showCancel: false,
-    success: () => {
+    success: async () => {
+      await requestAuditSubscribeMessage(userStore)
       uni.navigateBack()
     }
   })

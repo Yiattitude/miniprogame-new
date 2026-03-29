@@ -72,10 +72,16 @@ import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 /** 我的页面，展示积分、个人信息与订阅状态。 */
 
 const userStore = useUserStore()
+const subscribeStatusLabel = computed(() => getSubscribeStatusLabel(userStore.subscribeAuditResult))
 
 /** 跳转到指定功能页。 */
 const goTo = (url) => {
   uni.navigateTo({ url })
+}
+
+/** 用户手动再次申请审核通知订阅。 */
+const handleSubscribe = async () => {
+  await requestAuditSubscribeMessage(userStore)
 }
 
 /** 脱敏展示用户认证信息，避免在前端完整暴露敏感字段。 */
@@ -209,14 +215,21 @@ onShow(() => {
   font-weight: bold;
 }
 
-.list-container {
+.chart-container, .list-container {
   padding: 0 16px 20px;
+}
+
+.white-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 20px;
 }
 
 .module-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 0;
 }
 
 .module-card {

@@ -3,6 +3,14 @@ import { showErrorToast } from '@/utils/feedback'
 const LOGIN_PAGE = '/pages/login/login'
 let interceptorReady = false
 
+const getSubscribeTemplateIds = () => {
+  const raw = import.meta.env.VITE_SUBSCRIBE_TEMPLATE_IDS || ''
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
 /** 统一获取当前页面路径，供全局守卫判断是否需要放行。 */
 const getCurrentRoute = () => {
   const pages = getCurrentPages()
@@ -103,4 +111,51 @@ export const completeLogin = async (userStore) => {
   })
 
   return res
+}
+
+/** 规范化订阅消息状态，供页面提示与进度展示使用。 */
+const resolveSubscribeStatus = (result = {}, tmplIds = []) => {
+  const values = tmplIds.map((id) => result[id]).filter(Boolean)
+  if (values.includes('accept')) return 'accepted'
+  if (values.length === 0) return 'unknown'
+  return 'rejected'
+}
+
+/** 审核结果订阅申请，提交成功后调用。 */
+export const requestAuditSubscribeMessage = (userStore) => {
+  const tmplIds = getSubscribeTemplateIds()
+  if (tmplIds.length === 0) {
+    userStore?.setSubscribeStatus('unconfigured')
+    showErrorToast('订阅模板未配置，已跳过')
+    return Promise.resolve(false)
+  }
+
+  return new Promise((resolve) => {
+    uni.requestSubscribeMessage({
+      tmplIds,
+      success: (res) => {
+        const status = resolveSubscribeStatus(res, tmplIds)
+        userStore?.setSubscribeStatus(status)
+        showErrorToast(status === 'accepted' ? '已订阅审核通知' : '您可以稍后在“我的”页再次订阅')
+        resolve(res)
+      },
+      fail: () => {
+        userStore?.setSubscribeStatus('failed')
+        showErrorToast('订阅申请未完成')
+        resolve(false)
+      }
+    })
+  })
+}
+
+/** 将订阅状态转为页面可直接显示的中文文本。 */
+export const getSubscribeStatusLabel = (status) => {
+  const mapping = {
+    unknown: '未申请',
+    accepted: '已订阅',
+    rejected: '已拒绝',
+    failed: '申请失败',
+    unconfigured: '模板未配置'
+  }
+  return mapping[status] || '未申请'
 }

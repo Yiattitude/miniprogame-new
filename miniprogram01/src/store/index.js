@@ -13,6 +13,8 @@ export const useUserStore = defineStore('user', {
     loginAt: '',
     realnameVerified: false,
     realnameSubmittedAt: '',
+    subscribeAuditResult: 'unknown',
+    subscribeUpdatedAt: '',
     albumPermission: 'unknown',
     cameraPermission: 'unknown',
     volunteerPoints: 0,
@@ -36,6 +38,8 @@ export const useUserStore = defineStore('user', {
         this.loginAt = saved.loginAt || ''
         this.realnameVerified = !!saved.realnameVerified
         this.realnameSubmittedAt = saved.realnameSubmittedAt || ''
+        this.subscribeAuditResult = saved.subscribeAuditResult || 'unknown'
+        this.subscribeUpdatedAt = saved.subscribeUpdatedAt || ''
         this.albumPermission = saved.albumPermission || 'unknown'
         this.cameraPermission = saved.cameraPermission || 'unknown'
         this.volunteerPoints = Number(saved.volunteerPoints || 0)
@@ -54,6 +58,8 @@ export const useUserStore = defineStore('user', {
         loginAt: this.loginAt,
         realnameVerified: this.realnameVerified,
         realnameSubmittedAt: this.realnameSubmittedAt,
+        subscribeAuditResult: this.subscribeAuditResult,
+        subscribeUpdatedAt: this.subscribeUpdatedAt,
         albumPermission: this.albumPermission,
         cameraPermission: this.cameraPermission,
         volunteerPoints: this.volunteerPoints,
@@ -84,6 +90,12 @@ export const useUserStore = defineStore('user', {
       this.phone = payload?.phone || payload?.idCard || ''
       this.realnameVerified = !!(payload?.name && this.phone)
       this.realnameSubmittedAt = payload?.submittedAt || (this.realnameVerified ? new Date().toISOString() : '')
+      this.persist()
+    },
+    /** 记录订阅消息申请结果，便于“我的”页面展示。 */
+    setSubscribeStatus(status) {
+      this.subscribeAuditResult = status || 'unknown'
+      this.subscribeUpdatedAt = new Date().toISOString()
       this.persist()
     },
     /** 记录相册或相机权限状态，用于隐私设置页展示。 */
@@ -117,6 +129,8 @@ export const useUserStore = defineStore('user', {
       this.loginAt = ''
       this.realnameVerified = false
       this.realnameSubmittedAt = ''
+      this.subscribeAuditResult = 'unknown'
+      this.subscribeUpdatedAt = ''
       this.albumPermission = albumPermission
       this.cameraPermission = cameraPermission
       this.volunteerPoints = 0

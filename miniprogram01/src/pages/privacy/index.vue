@@ -5,6 +5,7 @@
       <text class="summary-title">当前合规状态</text>
       <text class="summary-text">隐私协议：{{ userStore.privacyAgreed ? '已同意' : '未同意' }}</text>
       <text class="summary-text">用户认证：{{ userStore.hasRealname ? '已完成' : '未完成' }}</text>
+      <text class="summary-text">消息订阅：{{ subscribeStatusLabel }}</text>
       <text class="summary-text">相册权限：{{ albumPermissionLabel }}</text>
       <text class="summary-text">相机权限：{{ cameraPermissionLabel }}</text>
     </view>
@@ -23,12 +24,14 @@
 import { computed } from 'vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { useUserStore } from '@/store'
+import { getSubscribeStatusLabel } from '@/utils/auth'
 import { showSuccessToast } from '@/utils/feedback'
 import { getPermissionStatusLabel, openSystemPermissionSetting } from '@/utils/upload'
 
-/** 隐私设置页，集中展示隐私和系统权限状态。 */
+/** 隐私设置页，集中展示隐私、订阅和系统权限状态。 */
 
 const userStore = useUserStore()
+const subscribeStatusLabel = computed(() => getSubscribeStatusLabel(userStore.subscribeAuditResult))
 const albumPermissionLabel = computed(() => getPermissionStatusLabel(userStore.albumPermission))
 const cameraPermissionLabel = computed(() => getPermissionStatusLabel(userStore.cameraPermission))
 
