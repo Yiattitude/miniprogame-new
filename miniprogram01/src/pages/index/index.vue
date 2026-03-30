@@ -46,7 +46,6 @@
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store'
-import { getOverallScoreSummary } from '@/utils/mockData'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
@@ -68,13 +67,13 @@ const goHonor = () => {
   uni.navigateTo({ url: '/pages/honor/index' })
 }
 
-/** 页面显示时同步演示积分，仅在首次加载时获取数据。 */
+/** 页面显示时同步积分，仅在首次加载时获取数据。 */
 const syncPoints = () => {
   if (initialized) return
-  const scoreSummary = getOverallScoreSummary()
+  // 暂时设置默认值，后续可从真实API获取
   userStore.setPoints({
-    volunteerPoints: scoreSummary.volunteerPoints,
-    honorPoints: scoreSummary.honorPoints
+    volunteerPoints: 0,
+    honorPoints: 0
   })
   initialized = true
 }
