@@ -44,6 +44,7 @@
       </view>
     </view>
   </view>
+  <GlobalBottomNav v-if="userStore.isAdmin" current="admin" :showBack="false" />
 </template>
 
 <script setup>
@@ -52,9 +53,12 @@ import { ref } from 'vue'
 import { fetchAdminDashboard } from '@/api/admin'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast } from '@/utils/feedback'
+import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import { useUserStore } from '@/store'
 
 /** 管理后台首页，展示审核统计和最近操作日志。 */
 
+const userStore = useUserStore()
 const summary = ref({
   pendingVolunteerCount: 0,
   pendingHonorCount: 0,
@@ -99,6 +103,7 @@ const loadDashboard = async () => {
 
 /** 页面展示时刷新统计与日志，并同步 TabBar 选中状态。 */
 onShow(() => {
+  uni.hideTabBar()
   loadDashboard()
 })
 </script>

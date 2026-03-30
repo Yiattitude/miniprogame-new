@@ -11,7 +11,7 @@
 
     <view
       v-for="item in navItems"
-      :key="item.pagePath"
+      :key="item.key"
       class="bottom-nav__item"
       :class="{ 'bottom-nav__item--active': current === item.key }"
       @click="switchPage(item)"
