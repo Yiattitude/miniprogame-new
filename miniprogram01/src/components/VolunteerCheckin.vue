@@ -17,7 +17,7 @@
             {{ index + 1 }}. {{ item }}
           </text>
           <text class="rule-item" v-if="moduleInfo">
-            {{ (moduleInfo?.rules?.length || 0) + 1 }}. 每次参与积 {{ moduleInfo?.min }}-{{ moduleInfo?.max }} 分。
+            {{ (moduleInfo?.rules?.length || 0) + 1 }}. 每次参与获得积分 {{ moduleInfo?.min }}-{{ moduleInfo?.max }} 分。
           </text>
         </view>
       </view>

@@ -1,13 +1,15 @@
 <template>
   <view class="page page-with-nav">
     <view class="header">
+      
       <text class="app-title">银才荟</text>
+
 
        <view class="welcome-card">
       <view class="welcome-content">
-        <text class="welcome-title">欢迎使用银才荟—志愿服务积分管理平台</text>
+        <text class="welcome-title">欢迎使用银才荟志愿服务积分管理平台</text>
       </view>
-      
+    </view>
 
     <view class="entry-list">
       <view class="entry-card" @click="goVolunteer">
@@ -35,8 +37,9 @@
         </view>
       </view>
     </view>
-    <GlobalBottomNav current="index" :showBack="false" />
   </view>
+  <GlobalBottomNav current="index" :showBack="false" />
+</view>
 </template>
 
 <script setup>
@@ -133,7 +136,7 @@ onShow(() => {
 }
 
 .welcome-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.6;
