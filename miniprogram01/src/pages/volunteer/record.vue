@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <view class="page-header">
       <text class="page-title">{{ pageTitle }}</text>
@@ -28,7 +28,7 @@
     </view>
 
     <view v-else class="empty-card">
-      <text class="empty-text">当前年度暂无审核通过的打卡记录</text>
+      <text class="empty-text">当前年度暂无打卡记录</text>
     </view>
 
     <u-picker
@@ -58,6 +58,10 @@
             <text class="detail-label">审核状态</text>
             <text class="detail-text">{{ selectedRecord.statusText }}</text>
           </view>
+          <view class="detail-row" v-if="selectedRecord.rejectReason">
+            <text class="detail-label">驳回原因</text>
+            <text class="detail-text">{{ selectedRecord.rejectReason }}</text>
+          </view>
           <view class="detail-row" v-if="selectedRecord.evidenceFiles && selectedRecord.evidenceFiles.length">
             <text class="detail-label">佐证材料</text>
             <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') }}</text>
@@ -76,10 +80,12 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { fetchVolunteerRecords } from '@/api/volunteer'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast } from '@/utils/feedback'
 import { getVolunteerModule } from '@/utils/rules'
-import { getVolunteerRecordList } from '@/utils/mockData'
 
 /** 志愿服务打卡记录页，支持按年度查看审核通过记录。 */
 
@@ -90,28 +96,47 @@ const showYearPicker = ref(false)
 const selectedYear = ref(String(currentYear))
 const moduleId = ref('')
 const selectedRecord = ref(null)
+const records = ref([])
 
 const pageTitle = computed(() => {
   const moduleInfo = getVolunteerModule(moduleId.value)
   return moduleInfo ? `${moduleInfo.name}打卡记录` : '我的打卡记录'
 })
 
-const records = computed(() =>
-  getVolunteerRecordList({
-    year: selectedYear.value,
-    moduleId: moduleId.value
-  })
-)
+/** 按当前筛选条件加载志愿记录。 */
+const loadRecords = async () => {
+  try {
+    const responseData = unwrapApiData(
+      await fetchVolunteerRecords({
+        year: selectedYear.value,
+        moduleId: moduleId.value,
+        page: 1,
+        pageSize: 50
+      }),
+      { list: [] }
+    )
+    records.value = (responseData.list || []).map((item) => ({
+      ...item,
+      activityTime: item.activityTime || '',
+      evidenceFiles: Array.isArray(item.evidenceFiles) ? item.evidenceFiles : []
+    }))
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '记录加载失败，请稍后重试'))
+    records.value = []
+  }
+}
 
 /** 接收上一个页面传入的模块标识。 */
 onLoad((options) => {
   moduleId.value = options?.moduleId || ''
+  loadRecords()
 })
 
 /** 切换年份后刷新记录列表。 */
 const onYearConfirm = (value) => {
   selectedYear.value = value?.value?.[0] || selectedYear.value
   showYearPicker.value = false
+  loadRecords()
 }
 
 /** 打开记录详情。 */
@@ -130,6 +155,11 @@ const getBadgeClass = (status) => {
   if (status === '已驳回') return 'badge-reject'
   return 'badge-default'
 }
+
+/** 页面回显时刷新最新记录。 */
+onShow(() => {
+  loadRecords()
+})
 </script>
 
 <style scoped>
@@ -314,3 +344,5 @@ const getBadgeClass = (status) => {
   margin-top: 10px;
 }
 </style>
+
+

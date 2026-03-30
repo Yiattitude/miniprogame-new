@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <view class="summary-grid">
       <view class="summary-card pending">
@@ -95,15 +95,16 @@
 </template>
 
 <script setup>
+import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
+import { fetchHonorRecords } from '@/api/honor'
+import { fetchVolunteerRecords } from '@/api/volunteer'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
-import { showSuccessToast } from '@/utils/feedback'
-import {
-  decorateApplication,
-  getApplicationStats,
-  getDemoApplications,
-  resubmitDemoApplication
-} from '@/utils/mockData'
+import { useUserStore } from '@/store'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
+import { ensureComplianceReady } from '@/utils/auth'
+import { getHonorLevel, getVolunteerModule } from '@/utils/rules'
 
 /** 我的申请页面，展示待审核、已通过、已驳回记录，并支持驳回后重提。 */
 
@@ -114,16 +115,106 @@ const tabs = [
 ]
 
 const current = ref(0)
-const records = ref(getDemoApplications())
+const records = ref([])
 const selectedRecord = ref(null)
-const stats = computed(() => getApplicationStats())
+const userStore = useUserStore()
+const stats = computed(() => ({
+  pending: records.value.filter((item) => item.status === 'pending').length,
+  approved: records.value.filter((item) => item.status === 'approved').length,
+  rejected: records.value.filter((item) => item.status === 'rejected').length
+}))
+
+/** 批量拉取某个接口的全部分页数据。 */
+const fetchAllPages = async (fetcher, params = {}) => {
+  const result = []
+  let page = 1
+  const pageSize = 50
+  let total = 0
+
+  do {
+    const data = unwrapApiData(await fetcher({ ...params, page, pageSize }), { list: [], total: 0 })
+    const list = Array.isArray(data.list) ? data.list : []
+    total = Number(data.total || 0)
+    result.push(...list)
+    if (list.length < pageSize) {
+      break
+    }
+    page += 1
+  } while (result.length < total)
+
+  return result
+}
+
+/** 映射志愿记录为页面统一展示结构。 */
+const mapVolunteerRecord = (item = {}) => ({
+  id: item.id,
+  type: 'volunteer',
+  moduleId: item.moduleId || '',
+  title: item.title || '志愿服务申报',
+  categoryName: item.categoryName || getVolunteerModule(item.moduleId)?.name || '志愿服务',
+  activityTime: item.activityTime || '',
+  submitTime: item.submitTime || item.activityTime || '',
+  location: item.location || '',
+  organization: '',
+  content: item.content || '',
+  claimedPoints: Number(item.claimedPoints || item.points || 0),
+  approvedPoints: Number(item.approvedPoints || 0),
+  status: item.status || 'pending',
+  statusText: item.statusText || '待审核',
+  tagType: item.tagType || 'warning',
+  rejectReason: item.rejectReason || '',
+  evidenceFiles: Array.isArray(item.evidenceFiles) ? item.evidenceFiles : []
+})
+
+/** 映射荣誉记录为页面统一展示结构。 */
+const mapHonorRecord = (item = {}) => ({
+  id: item.id,
+  type: 'honor',
+  levelId: item.levelId || '',
+  title: item.title || '荣誉获奖申报',
+  categoryName: item.categoryName || getHonorLevel(item.levelId)?.name || '荣誉获奖',
+  activityTime: item.activityTime || '',
+  submitTime: item.submitTime || item.activityTime || '',
+  location: '',
+  organization: item.organization || '',
+  content: item.content || item.title || '',
+  claimedPoints: Number(item.claimedPoints || item.points || 0),
+  approvedPoints: Number(item.approvedPoints || 0),
+  status: item.status || 'pending',
+  statusText: item.statusText || '待审核',
+  tagType: item.tagType || 'warning',
+  rejectReason: item.rejectReason || '',
+  evidenceFiles: Array.isArray(item.evidenceFiles) ? item.evidenceFiles : []
+})
+
+/** 拉取并合并真实申请记录。 */
+const loadRecords = async () => {
+  if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
+    return
+  }
+
+  try {
+    const [volunteerList, honorList] = await Promise.all([
+      fetchAllPages(fetchVolunteerRecords),
+      fetchAllPages(fetchHonorRecords)
+    ])
+
+    records.value = [
+      ...volunteerList.map(mapVolunteerRecord),
+      ...honorList.map(mapHonorRecord)
+    ].sort((left, right) => new Date(right.submitTime || 0).getTime() - new Date(left.submitTime || 0).getTime())
+  } catch (error) {
+    records.value = []
+    showErrorToast(resolveApiErrorMessage(error, '申请记录加载失败，请稍后重试'))
+  }
+}
 
 const filtered = computed(() => {
   const statusKey = ['pending', 'approved', 'rejected'][current.value]
   return records.value
     .filter((item) => item.status === statusKey)
     .map((item) => ({
-      ...decorateApplication(item),
+      ...item,
       recordDesc:
         item.type === 'volunteer'
           ? `志愿服务申报 ${item.claimedPoints} 分`
@@ -146,14 +237,37 @@ const closeDetail = () => {
   selectedRecord.value = null
 }
 
-/** 驳回记录本地重提，模拟前端闭环。 */
+/** 驳回记录引导用户回到对应申报页重新提交。 */
 const resubmitSelected = () => {
   if (!selectedRecord.value) return
-  records.value = resubmitDemoApplication(selectedRecord.value.id)
+  const record = selectedRecord.value
   closeDetail()
   current.value = 0
-  showSuccessToast('已重新提交，等待审核')
+  if (record.type === 'volunteer') {
+    const volunteerRouteMap = {
+      'red-culture': '/pages/volunteer/redCulture',
+      'community-governance': '/pages/volunteer/governance',
+      'enterprise-service': '/pages/volunteer/enterprise',
+      'elder-help': '/pages/volunteer/helpOld',
+      'other-service': '/pages/volunteer/other'
+    }
+    uni.navigateTo({ url: volunteerRouteMap[record.moduleId] || '/pages/volunteer/index' })
+    showSuccessToast('请修改后重新提交')
+    return
+  }
+  const honorRouteMap = {
+    national: '/pages/honor/national',
+    provincial: '/pages/honor/provincial',
+    bureau: '/pages/honor/bureau',
+    factory: '/pages/honor/factory'
+  }
+  uni.navigateTo({ url: honorRouteMap[record.levelId] || '/pages/honor/index' })
+  showSuccessToast('请修改后重新提交')
 }
+
+onShow(() => {
+  loadRecords()
+})
 </script>
 
 <style scoped>
@@ -316,3 +430,5 @@ const resubmitSelected = () => {
   gap: 12px;
 }
 </style>
+
+

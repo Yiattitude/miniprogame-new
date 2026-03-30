@@ -2,6 +2,7 @@
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store'
 import { ensureComplianceReady, setupComplianceInterceptors } from '@/utils/auth'
+import '@/utils/api-helper'
 
 const userStore = useUserStore()
 
@@ -222,8 +223,4 @@ textarea,
 }
 
 /* 隐藏原生 tabBar，使用自定义组件 GlobalBottomNav 替代。 */
-uni-tabbar,
-.uni-tabbar {
-  display: none !important;
-}
 </style>

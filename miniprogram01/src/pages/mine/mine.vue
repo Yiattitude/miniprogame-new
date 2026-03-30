@@ -1,5 +1,5 @@
-<template>
-  <view class="page page-with-nav">
+﻿<template>
+  <view class="page page-with-tabbar">
 
 
     <!-- 顶部总积分大卡片 -->
@@ -27,7 +27,7 @@
     <!-- 年度积分趋势卡片 -->
     <view class="chart-container">
       <view class="white-card">
-        <Chart />
+        <Chart :refresh-key="chartRefreshKey" :trend-data="trendData" />
       </view>
     </view>
 
@@ -52,36 +52,30 @@
         </view>
       </view>
     </view>
-
-    <GlobalBottomNav current="mine" :showBack="false" />
   </view>
 </template>
 
 <script setup>
 import { onShow } from '@dcloudio/uni-app'
-import { computed } from 'vue'
+import { ref } from 'vue'
+import { fetchUserProfile } from '@/api/user'
 import { useUserStore } from '@/store'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { ensureComplianceReady } from '@/utils/auth'
-import { showSuccessToast } from '@/utils/feedback'
-import { getOverallScoreSummary } from '@/utils/mockData'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { maskName, maskPhone } from '@/utils/rules'
 import Chart from '@/components/Chart.vue'
-import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
 /** 我的页面，展示积分、个人信息与订阅状态。 */
 
 const userStore = useUserStore()
-const subscribeStatusLabel = computed(() => getSubscribeStatusLabel(userStore.subscribeAuditResult))
+const chartRefreshKey = ref(0)
+const trendData = ref([])
 
 /** 跳转到指定功能页。 */
 const goTo = (url) => {
   uni.navigateTo({ url })
-}
-
-/** 用户手动再次申请审核通知订阅。 */
-const handleSubscribe = async () => {
-  await requestAuditSubscribeMessage(userStore)
 }
 
 /** 脱敏展示用户认证信息，避免在前端完整暴露敏感字段。 */
@@ -110,23 +104,49 @@ const logout = () => {
   })
 }
 
-/** 标记是否已初始化积分数据，避免重复加载。 */
-let initialized = false
+/** 页面展示时拉取真实用户资料并刷新积分。 */
+const syncProfile = async () => {
+  try {
+    const profileData = unwrapApiData(await fetchUserProfile(), {})
+    const userInfo = profileData.userInfo || {}
+    userStore.setUserInfo({
+      name: userInfo.realName || userInfo.name || '',
+      realName: userInfo.realName || userInfo.name || '',
+      phone: userInfo.phone || '',
+      role: userInfo.role || '',
+      submittedAt: new Date().toISOString()
+    })
+    userStore.setAdmin(userInfo.role === 'admin')
+    if (profileData.scoreSummary) {
+      const volunteerPoints = Number(profileData.scoreSummary.volunteerPoints || 0)
+      const honorPoints = Number(profileData.scoreSummary.honorPoints || 0)
+      const totalPoints = volunteerPoints + honorPoints
+      userStore.setPoints({
+        volunteerPoints,
+        honorPoints
+      })
 
-/** 页面显示时同步积分，仅在首次加载时获取数据。 */
+      // 使用真实积分生成近 5 年趋势：当前年展示总积分，其余年份为 0（后续可扩展为逐年明细接口）。
+      const currentYear = new Date().getFullYear()
+      trendData.value = Array.from({ length: 5 }, (_, index) => {
+        const year = currentYear - 4 + index
+        return {
+          label: `${year}年`,
+          total: year === currentYear ? totalPoints : 0
+        }
+      })
+    }
+    chartRefreshKey.value += 1
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '个人信息加载失败，请稍后重试'))
+  }
+}
+
 onShow(() => {
-  uni.hideTabBar()
   if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
     return
   }
-
-  if (initialized) return
-  const scoreSummary = getOverallScoreSummary()
-  userStore.setPoints({
-    volunteerPoints: scoreSummary.volunteerPoints,
-    honorPoints: scoreSummary.honorPoints
-  })
-  initialized = true
+  syncProfile()
 })
 </script>
 
@@ -247,4 +267,11 @@ onShow(() => {
   color: #333333;
   font-weight: 500;
 }
+
+.page-with-tabbar {
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
 </style>
+
+
+

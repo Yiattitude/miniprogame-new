@@ -1,13 +1,17 @@
-<template>
-  <view class="page page-with-nav">
+﻿<template>
+  <view class="page page-with-tabbar">
     <view class="header">
-      <text class="app-title">银才荟</text>
-
-       <view class="welcome-card">
-      <view class="welcome-content">
-        <text class="welcome-title">欢迎使用银才荟—志愿服务积分管理平台</text>
+      <text class="app-title">银发人才</text>
+      <view class="points-card">
+        <text class="points-label">当前总积分</text>
+        <text class="points-value">{{ totalPoints }}</text>
       </view>
-      
+      <view class="welcome-card">
+        <view class="welcome-content">
+          <text class="welcome-title">欢迎使用银发人才志愿服务积分平台</text>
+        </view>
+      </view>
+    </view>
 
     <view class="entry-list">
       <view class="entry-card" @click="goVolunteer">
@@ -18,10 +22,11 @@
           </view>
           <view class="entry-info">
             <text class="entry-title">志愿服务</text>
-            <text class="entry-desc">申报志愿活动，累计积分</text>
+            <text class="entry-desc">申报志愿活动，累计服务积分</text>
           </view>
         </view>
       </view>
+
       <view class="entry-card" @click="goHonor">
         <view class="entry-card__decoration entry-card__decoration--yellow"></view>
         <view class="entry-content">
@@ -30,30 +35,55 @@
           </view>
           <view class="entry-info">
             <text class="entry-title">荣誉获奖</text>
-            <text class="entry-desc">申报荣誉奖项，累计积分</text>
+            <text class="entry-desc">申报荣誉奖项，累计荣誉积分</text>
           </view>
         </view>
       </view>
     </view>
-    <GlobalBottomNav current="index" :showBack="false" />
   </view>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { fetchUserProfile } from '@/api/user'
 import { useUserStore } from '@/store'
-import { getOverallScoreSummary } from '@/utils/mockData'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { ensureComplianceReady } from '@/utils/auth'
+import { showErrorToast } from '@/utils/feedback'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
 /** 首页，展示总积分和两大业务入口。 */
-
 const userStore = useUserStore()
 const totalPoints = computed(() => userStore.totalPoints)
 
-/** 标记是否已初始化积分数据，避免重复加载。 */
-let initialized = false
+/** 拉取真实用户积分并同步到本地状态。 */
+const syncPoints = async () => {
+  if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
+    return
+  }
+
+  try {
+    const profileData = unwrapApiData(await fetchUserProfile(), {})
+    const userInfo = profileData.userInfo || {}
+    userStore.setUserInfo({
+      name: userInfo.realName || userInfo.name || '',
+      realName: userInfo.realName || userInfo.name || '',
+      phone: userInfo.phone || '',
+      role: userInfo.role || '',
+      submittedAt: new Date().toISOString()
+    })
+    userStore.setAdmin(userInfo.role === 'admin')
+    if (profileData.scoreSummary) {
+      userStore.setPoints({
+        volunteerPoints: Number(profileData.scoreSummary.volunteerPoints || 0),
+        honorPoints: Number(profileData.scoreSummary.honorPoints || 0)
+      })
+    }
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '积分加载失败，请稍后重试'))
+  }
+}
 
 /** 进入志愿服务模块。 */
 const goVolunteer = () => {
@@ -65,19 +95,7 @@ const goHonor = () => {
   uni.navigateTo({ url: '/pages/honor/index' })
 }
 
-/** 页面显示时同步演示积分，仅在首次加载时获取数据。 */
-const syncPoints = () => {
-  if (initialized) return
-  const scoreSummary = getOverallScoreSummary()
-  userStore.setPoints({
-    volunteerPoints: scoreSummary.volunteerPoints,
-    honorPoints: scoreSummary.honorPoints
-  })
-  initialized = true
-}
-
 onShow(() => {
-  uni.hideTabBar()
   syncPoints()
 })
 </script>
@@ -228,4 +246,11 @@ onShow(() => {
 .entry-card :deep(.u-button) {
   min-width: 132px;
 }
+
+.page-with-tabbar {
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
 </style>
+
+
+
