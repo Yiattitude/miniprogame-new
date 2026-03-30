@@ -28,9 +28,9 @@ import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
 const levels = [
   { name: '国家级荣誉', desc: '获得国家级单位授予的各类荣誉称号', points: 20, path: '/pages/honor/national' },
-  { name: '省部级荣誉', desc: '获得上海市、国网公司、全国电力行业等授予的各类荣誉称号', points: 15, path: '/pages/honor/provincial' },
-  { name: '厅局级荣誉', desc: '获得分部、上海市经信委、退管会、区等单位授予的各类荣誉称号', points: 10, path: '/pages/honor/bureau' },
-  { name: '厂处级荣誉', desc: '获得街道党工委、街道办事处等授予的各类荣誉称号', points: 5, path: '/pages/honor/factory' }
+  { name: '省部级荣誉', desc: '获得上海市、国网公司、全国电力行业等授予的各类荣誉称号', points: 16, path: '/pages/honor/provincial' },
+  { name: '厅局级荣誉', desc: '获得分部、上海市经信委、退管会、区等单位授予的各类荣誉称号', points: 12, path: '/pages/honor/bureau' },
+  { name: '厂处级荣誉', desc: '获得街道党工委、街道办事处等授予的各类荣誉称号', points: 10, path: '/pages/honor/factory' }
 ]
 
 const goApply = (item) => {

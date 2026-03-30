@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <!-- 头部标题 -->
     <view class="page-header" v-if="!showCheckinForm">
@@ -156,9 +156,10 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import UploadImage from '@/components/UploadImage.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
-import { showErrorToast } from '@/utils/feedback'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
+import { request } from '@/utils/request'
 import { getVolunteerModule } from '@/utils/rules'
-import { checkContentSecurity } from '@/utils/upload'
 import { ensureComplianceReady, requestAuditSubscribeMessage } from '@/utils/auth'
 
 /** 志愿服务申报表单组件，负责积分校验、内容校验和订阅引导。 */
@@ -237,32 +238,34 @@ const handleSubmit = async () => {
     return
   }
 
-  const passed = await checkContentSecurity({
-    text: {
-      activityTime: form.activityTime,
-      location: form.location,
-      title: form.title,
-      content: form.content,
-      points: form.points
-    },
-    files: form.files
-  })
+  try {
+    uni.showLoading({ title: '提交中', mask: true })
+    unwrapApiData(
+      await request({
+        url: '/volunteer/submit',
+        method: 'POST',
+        data: {
+        moduleId: props.moduleId,
+        activityTime: form.activityTime,
+        location: form.location.trim(),
+        title: form.title.trim(),
+        content: form.content.trim(),
+        points: pointsNum,
+        files: form.files.map((item) => item?.url || item?.fileID || '').filter(Boolean)
+        }
+      }),
+      {}
+    )
+    uni.hideLoading()
 
-  if (!passed) {
-    uni.showModal({ title: '内容校验未通过', content: '请修改内容后重新提交。', showCancel: false })
-    return
+    showSuccessToast('提交成功，已进入待审核流程')
+    await requestAuditSubscribeMessage(userStore)
+    showCheckinForm.value = false
+    Object.assign(form, { activityTime: '', location: '', title: '', content: '', points: '', files: [] })
+  } catch (error) {
+    uni.hideLoading()
+    showErrorToast(resolveApiErrorMessage(error, '提交失败，请稍后重试'))
   }
-
-  uni.showModal({
-    title: '提交成功',
-    content: '已进入待审核流程，可在“打卡记录”中查看状态。',
-    showCancel: false,
-    success: async () => {
-      await requestAuditSubscribeMessage(userStore)
-      showCheckinForm.value = false
-      Object.assign(form, { activityTime: '', location: '', title: '', content: '', points: '', files: [] })
-    }
-  })
 }
 
 /** 页面显示时再次校验登录与实名状态。 */
@@ -510,4 +513,5 @@ onShow(() => {
   color: #999999;
 }
 </style>
+
 

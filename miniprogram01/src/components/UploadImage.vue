@@ -4,7 +4,7 @@
       <view v-for="(item, index) in files" :key="item.url || index" class="upload-card">
         <image class="upload-image" :src="item.url" mode="aspectFill" @click="previewFile(index)" />
         <view class="upload-delete" @click.stop="removeFile(index)">
-          <u-icon name="close" color="#ffffff" size="12" />
+          <uni-icons type="closeempty" color="#ffffff" size="14" />
         </view>
       </view>
     </view>
@@ -34,6 +34,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
 import { showErrorToast } from '@/utils/feedback'
 import { chooseEvidenceImages, getPermissionStatusLabel } from '@/utils/upload'
@@ -51,7 +52,7 @@ const props = defineProps({
   },
   maxSize: {
     type: Number,
-    default: 10240
+    default: 500 * 1024 * 1024
   }
 })
 

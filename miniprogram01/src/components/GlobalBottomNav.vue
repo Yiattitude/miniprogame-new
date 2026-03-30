@@ -5,7 +5,7 @@
       class="bottom-nav__item"
       @click="goBack"
     >
-      <u-icon name="arrow-left" size="24" color="#64748b" />
+      <uni-icons type="left" size="20" color="#64748b" />
       <text class="bottom-nav__text">返回</text>
     </view>
 
@@ -30,6 +30,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
 
 /** 全局底部导航，支持根据管理员权限动态扩展。 */
