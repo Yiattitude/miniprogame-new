@@ -24,21 +24,38 @@
 
 <script setup>
 import { computed } from 'vue'
-import { getAnnualScoreTrend } from '@/utils/mockData'
 
-const rawTrend = getAnnualScoreTrend()
+const props = defineProps({
+  refreshKey: {
+    type: Number,
+    default: 0
+  },
+  trendData: {
+    type: Array,
+    default: () => []
+  }
+})
 
-// 将后端的原始年份数字包装为带单位的形式，方便x轴标签阅读
-const trend = rawTrend.map(item => ({
-  label: item.year + '年',
-  total: item.total
-}))
+/** 图表数据优先使用父页面传入，缺省时展示近 5 年空数据。 */
+const trend = computed(() => {
+  if (Array.isArray(props.trendData) && props.trendData.length > 0) {
+    return props.trendData.map((item) => ({
+      label: item.label || '',
+      total: Number(item.total || 0)
+    }))
+  }
 
-const maxScore = Math.max(...trend.map(i => i.total), 1)
+  const currentYear = new Date().getFullYear()
+  return Array.from({ length: 5 }, (_, index) => ({
+    label: `${currentYear - 4 + index}年`,
+    total: 0
+  }))
+})
 
-const getBarHeight = (total) => {
-  return total > 0 ? (total / maxScore) * 100 : 0
-}
+const maxScore = computed(() => Math.max(...trend.value.map((item) => Number(item.total || 0)), 1))
+
+/** 将积分值按最大值换算为柱子高度百分比。 */
+const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 100 : 0)
 </script>
 
 <style scoped>

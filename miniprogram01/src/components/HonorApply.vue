@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <view class="page-header">
       <text class="page-title">{{ levelInfo?.name || '荣誉获奖' }}申报</text>
@@ -107,9 +107,10 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import UploadImage from '@/components/UploadImage.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
-import { showErrorToast } from '@/utils/feedback'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
+import { request } from '@/utils/request'
 import { getHonorLevel } from '@/utils/rules'
-import { checkContentSecurity } from '@/utils/upload'
 import { ensureComplianceReady, requestAuditSubscribeMessage } from '@/utils/auth'
 
 /** 荣誉申报表单组件，负责自动填充分值、内容校验和订阅引导。 */
@@ -172,29 +173,31 @@ const handleSubmit = async () => {
     return
   }
 
-  const passed = await checkContentSecurity({
-    text: {
-      title: form.title,
-      time: form.time,
-      organization: form.organization,
-      points: form.points
-    },
-    files: form.files
-  })
-
-  if (!passed) {
-    uni.showModal({ title: '内容校验未通过', content: '请修改内容后重新提交。', showCancel: false })
-    return
+  try {
+    uni.showLoading({ title: '提交中', mask: true })
+    unwrapApiData(
+      await request({
+        url: '/honor/submit',
+        method: 'POST',
+        data: {
+        levelId: props.levelId,
+        title: form.title.trim(),
+        time: form.time,
+        organization: form.organization.trim(),
+        points: Number(form.points),
+        files: form.files.map((item) => item?.url || item?.fileID || '').filter(Boolean)
+        }
+      }),
+      {}
+    )
+    uni.hideLoading()
+    showSuccessToast('提交成功，已进入待审核流程')
+    await requestAuditSubscribeMessage(userStore)
+    uni.navigateBack()
+  } catch (error) {
+    uni.hideLoading()
+    showErrorToast(resolveApiErrorMessage(error, '提交失败，请稍后重试'))
   }
-  uni.showModal({
-    title: '提交成功',
-    content: '已进入待审核流程，可在“我的申请”中查看状态。',
-    showCancel: false,
-    success: async () => {
-      await requestAuditSubscribeMessage(userStore)
-      uni.navigateBack()
-    }
-  })
 }
 
 /** 页面显示时再次校验登录与实名状态。 */
@@ -366,3 +369,5 @@ onShow(() => {
   color: #ffffff;
 }
 </style>
+
+

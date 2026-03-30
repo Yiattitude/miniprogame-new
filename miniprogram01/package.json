@@ -10,6 +10,7 @@
     "dev:mp-weixin": "uni -p mp-weixin",
     "prebuild:mp-weixin": "node scripts/clean-mp-output.cjs build mp-weixin",
     "build:mp-weixin": "uni build -p mp-weixin",
+    "postinstall": "node scripts/patch-uview-bind.cjs",
     "lint": "eslint --ext .js,.vue --fix .",
     "format": "prettier -w ."
   },

@@ -1,8 +1,8 @@
 import { showErrorToast } from '@/utils/feedback'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
+const MAX_FILE_SIZE = 50 * 1024 * 1024
 
-/** 上传前说明用途，符合“先说明、后申请”的微信合规要求。 */
+/** 上传前先说明用途，符合微信“先说明、后申请”的合规要求。 */
 export const confirmMediaPermission = (sourceType) =>
   new Promise((resolve) => {
     const sourceLabel = sourceType === 'camera' ? '相机' : '相册'
@@ -14,7 +14,7 @@ export const confirmMediaPermission = (sourceType) =>
     })
   })
 
-/** 打开微信系统权限设置页，便于用户重新授权。 */
+/** 打开系统权限设置页，便于用户重新授权。 */
 export const openSystemPermissionSetting = () =>
   new Promise((resolve) => {
     if (typeof uni.openSetting !== 'function') {
@@ -35,7 +35,7 @@ const isCancelError = (message = '') => /cancel/i.test(message)
 /** 判断是否属于权限被拒绝，便于给出打开设置的引导。 */
 const isPermissionDeniedError = (message = '') => /auth deny|authorize|permission|denied/i.test(message)
 
-/** 统一调起图片选择，并过滤超出 10MB 的图片。 */
+/** 统一调起图片选择，并过滤超过 50MB 的图片。 */
 export const chooseEvidenceImages = async ({ sourceType = 'album', count = 1, maxSize = MAX_FILE_SIZE } = {}) => {
   const confirmed = await confirmMediaPermission(sourceType)
   if (!confirmed) {
@@ -55,18 +55,19 @@ export const chooseEvidenceImages = async ({ sourceType = 'album', count = 1, ma
       })
     })
 
-    const validFiles = (res?.tempFiles || [])
-      .filter((item) => item.size <= maxSize)
+    const selectedFiles = res?.tempFiles || []
+    const validFiles = selectedFiles
+      .filter((item) => Number(item.size || 0) <= maxSize)
       .map((item, index) => ({
         url: item.tempFilePath,
         name: item.tempFilePath?.split('/').pop() || `evidence-${Date.now()}-${index + 1}.jpg`,
-        size: item.size,
+        size: Number(item.size || 0),
         type: 'image',
         sourceType
       }))
 
-    if (validFiles.length !== (res?.tempFiles || []).length) {
-      showErrorToast('超出10MB的图片已自动过滤')
+    if (validFiles.length !== selectedFiles.length) {
+      showErrorToast('超过50MB的图片无法上传，请重新选择')
     }
 
     return {

@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <view class="section-title">批量数据导入</view>
     <view class="notice-card">
-      <text class="notice-title">前端演示说明</text>
-      <text class="notice-desc">当前页面使用本地 mock 数据模拟导入流程，后续可直接替换为真实上传接口。</text>
+      <text class="notice-title">导入说明</text>
+      <text class="notice-desc">请选择 Excel 文件后提交到后端导入接口，导入结果会显示在下方历史列表。</text>
     </view>
 
     <view class="card">
@@ -14,7 +14,7 @@
 
     <view class="card">
       <text class="card-title">上传 Excel</text>
-      <text class="card-desc">前端阶段先模拟导入成功和历史留痕</text>
+      <text class="card-desc">{{ currentFileName ? `当前已选择：${currentFileName}` : '支持 .xlsx / .xls 文件' }}</text>
       <u-button type="info" text="选择文件" size="large" @click="uploadFile" />
     </view>
 
@@ -35,6 +35,7 @@
       <view v-for="item in history" :key="item.id" class="history-card">
         <text class="history-name">{{ item.fileName }}</text>
         <text class="history-meta">导入条数：{{ item.importedCount }} 条</text>
+        <text class="history-meta">失败条数：{{ item.failedCount || 0 }} 条</text>
         <text class="history-meta">操作人：{{ item.operator }} · {{ item.time }}</text>
       </view>
     </view>
@@ -45,14 +46,19 @@
 
 <script setup>
 import { ref } from 'vue'
+import { importExcel } from '@/api/admin'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
-import { showSuccessToast } from '@/utils/feedback'
-import { getImportHistory, getImportTemplateFields, simulateImportHistory } from '@/utils/mockData'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 
-/** 管理后台导入页，展示模板字段并模拟导入记录。 */
+/** 管理后台导入页，展示模板字段并提交真实导入请求。 */
 
-const templateFields = getImportTemplateFields()
-const history = ref(getImportHistory())
+const templateFields = {
+  volunteer: ['用户姓名', '身份证号', '模块标识', '活动名称', '时间', '地点', '参与内容', '积分', '佐证材料链接'],
+  honor: ['用户姓名', '身份证号', '荣誉级别', '荣誉名称', '获取时间', '授奖单位', '佐证材料链接']
+}
+const history = ref([])
+const currentFileName = ref('')
 
 /** 展示模板字段说明，方便后端联调时核对 Excel 结构。 */
 const downloadTemplate = () => {
@@ -63,10 +69,51 @@ const downloadTemplate = () => {
   })
 }
 
-/** 前端阶段先模拟导入完成并写入本地历史。 */
+/** 选择 Excel 文件并调用真实导入接口。 */
 const uploadFile = () => {
-  history.value = simulateImportHistory()
-  showSuccessToast('已完成前端导入演示')
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['xlsx', 'xls'],
+    success: async (res) => {
+      const file = res?.tempFiles?.[0]
+      if (!file) {
+        showErrorToast('未选择有效文件')
+        return
+      }
+
+      currentFileName.value = file.name || '未命名文件'
+
+      try {
+        const importData = unwrapApiData(
+          await importExcel({
+            fileName: file.name || '',
+            filePath: file.path || '',
+            records: []
+          }),
+          {}
+        )
+        const importedCount = Number(importData.importedVolunteer || 0) + Number(importData.importedHonor || 0)
+        history.value = [
+          {
+            id: `${Date.now()}`,
+            fileName: file.name || '未命名文件',
+            importedCount,
+            failedCount: Number(importData.failedCount || 0),
+            operator: '当前管理员',
+            time: new Date().toLocaleString()
+          },
+          ...history.value
+        ]
+        showSuccessToast(`导入完成：成功 ${importedCount} 条，失败 ${Number(importData.failedCount || 0)} 条`)
+      } catch (error) {
+        showErrorToast(resolveApiErrorMessage(error, '导入失败，请稍后重试'))
+      }
+    },
+    fail: () => {
+      showErrorToast('文件选择已取消')
+    }
+  })
 }
 </script>
 
@@ -159,3 +206,5 @@ const uploadFile = () => {
   color: #64748b;
 }
 </style>
+
+

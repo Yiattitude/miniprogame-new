@@ -1,5 +1,6 @@
-<template>
-  <view class="page page-with-nav">
+﻿<template>
+  <view class="page page-with-tabbar">
+    <u-icon v-if="false" name="close" />
     <view class="section-title text-center">管理后台</view>
     <view class="summary-grid">
       <view class="summary-card volunteer">
@@ -23,7 +24,7 @@
     <view class="card-list">
       <view class="card" @click="goTo('/pages/admin/import')">
         <text class="card-title">批量数据导入</text>
-        <text class="card-desc">查看模板字段并模拟导入历史</text>
+        <text class="card-desc">查看模板字段并提交导入任务</text>
       </view>
       <view class="card" @click="goTo('/pages/admin/audit')">
         <text class="card-title">数据审核</text>
@@ -31,27 +32,26 @@
       </view>
       <view class="card" @click="goTo('/pages/admin/export')">
         <text class="card-title">全量数据导出</text>
-        <text class="card-desc">按条件筛选并预览导出结果</text>
+        <text class="card-desc">按条件筛选并导出真实数据</text>
       </view>
     </view>
 
-    <view class="section-title">最近操作日志</view>
+    <view class="section-title">最近申报动态</view>
     <view class="log-list">
       <view v-for="item in logs" :key="item.id" class="log-card">
         <text class="log-content">{{ item.content }}</text>
-        <text class="log-meta">{{ item.operator }} · {{ item.time }} · {{ item.ip }}</text>
+        <text class="log-meta">{{ item.operator }} · {{ item.time }}</text>
       </view>
     </view>
-
-    <GlobalBottomNav current="admin" :showBack="false" />
   </view>
 </template>
 
 <script setup>
 import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
-import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
-import { getAdminDashboardSummary, getOperationLogs } from '@/utils/mockData'
+import { fetchAdminDashboard } from '@/api/admin'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast } from '@/utils/feedback'
 
 /** 管理后台首页，展示审核统计和最近操作日志。 */
 
@@ -68,11 +68,38 @@ const goTo = (url) => {
   uni.navigateTo({ url })
 }
 
+/** 刷新管理首页统计与动态。 */
+const loadDashboard = async () => {
+  try {
+    const data = unwrapApiData(await fetchAdminDashboard(), { summary: {}, logs: [] })
+    summary.value = {
+      pendingVolunteerCount: Number(data.summary?.pendingVolunteerCount || 0),
+      pendingHonorCount: Number(data.summary?.pendingHonorCount || 0),
+      approvedCount: Number(data.summary?.approvedCount || 0),
+      rejectedCount: Number(data.summary?.rejectedCount || 0)
+    }
+
+    logs.value = (data.logs || []).map((item) => ({
+      id: item.id,
+      operator: item.applicantName || '未知用户',
+      time: item.submitTime || '',
+      content: `${item.type === 'volunteer' ? '志愿服务' : '荣誉获奖'}：${item.title || ''}（${item.statusText || '待审核'}）`
+    }))
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '管理数据加载失败，请稍后重试'))
+    summary.value = {
+      pendingVolunteerCount: 0,
+      pendingHonorCount: 0,
+      approvedCount: 0,
+      rejectedCount: 0
+    }
+    logs.value = []
+  }
+}
+
 /** 页面展示时刷新统计与日志，并同步 TabBar 选中状态。 */
 onShow(() => {
-  uni.hideTabBar()
-  summary.value = getAdminDashboardSummary()
-  logs.value = getOperationLogs().slice(0, 5)
+  loadDashboard()
 })
 </script>
 
@@ -183,4 +210,11 @@ onShow(() => {
   color: #333333;
   margin: 20px 0;
 }
+
+.page-with-tabbar {
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
 </style>
+
+
+

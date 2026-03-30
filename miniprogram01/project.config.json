@@ -1,24 +1,37 @@
 {
-  "setting": {
-    "es6": true,
-    "postcss": true,
-    "minified": true,
-    "uglifyFileName": false,
-    "enhance": true,
-    "packNpmRelationList": [],
-    "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
-      "outputPath": ""
+    "miniprogramRoot": "dist/build/mp-weixin/",
+    "cloudfunctionRoot": "cloudfunctions/",
+    "setting": {
+        "es6": true,
+        "postcss": true,
+        "minified": true,
+        "uglifyFileName": false,
+        "enhance": true,
+        "packNpmRelationList": [],
+        "babelSetting": {
+            "ignore": [],
+            "disablePlugins": [],
+            "outputPath": ""
+        },
+        "useCompilerPlugins": false,
+        "minifyWXML": true,
+        "compileWorklet": false,
+        "uploadWithSourceMap": true,
+        "packNpmManually": false,
+        "minifyWXSS": true,
+        "localPlugins": false,
+        "disableUseStrict": false,
+        "condition": false,
+        "swc": false,
+        "disableSWC": true
     },
-    "useCompilerPlugins": false,
-    "minifyWXML": true
-  },
-  "compileType": "miniprogram",
-  "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "appid": "wx8aa643e89ae9c5a9",
-  "editorSetting": {}
+    "compileType": "miniprogram",
+    "packOptions": {
+        "ignore": [],
+        "include": []
+    },
+    "appid": "wx2b8ff48151cc1a2b",
+    "editorSetting": {},
+    "libVersion": "3.15.1",
+    "simulatorPluginLibVersion": {}
 }

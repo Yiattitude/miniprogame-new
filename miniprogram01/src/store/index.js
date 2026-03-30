@@ -6,7 +6,9 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     name: '',
     phone: '',
-    isAdmin: true, // 默认管理员身份，便于开发调试，正式发布前请改为 false
+    isAdmin: false,
+    openid: '',
+    token: '',
     privacyAgreed: false,
     privacyAgreedAt: '',
     sessionCode: '',
@@ -32,6 +34,8 @@ export const useUserStore = defineStore('user', {
         this.name = saved.name || ''
         this.phone = saved.phone || saved.idCard || ''
         this.isAdmin = !!saved.isAdmin
+        this.openid = saved.openid || ''
+        this.token = saved.token || ''
         this.privacyAgreed = !!saved.privacyAgreed
         this.privacyAgreedAt = saved.privacyAgreedAt || ''
         this.sessionCode = saved.sessionCode || ''
@@ -52,6 +56,8 @@ export const useUserStore = defineStore('user', {
         name: this.name,
         phone: this.phone,
         isAdmin: this.isAdmin,
+        openid: this.openid,
+        token: this.token,
         privacyAgreed: this.privacyAgreed,
         privacyAgreedAt: this.privacyAgreedAt,
         sessionCode: this.sessionCode,
@@ -80,15 +86,44 @@ export const useUserStore = defineStore('user', {
     /** 写入微信登录换取到的会话凭证。 */
     setLoginSession(payload = {}) {
       this.sessionCode = payload.sessionCode || ''
+      this.openid = payload.openid || this.openid
+      this.token = payload.token || this.token
       this.loginAt = payload.loginAt || ''
+      if (this.openid) {
+        uni.setStorageSync('yc_openid', this.openid)
+      }
+      if (this.token) {
+        uni.setStorageSync('yc_token', this.token)
+      }
+      this.persist()
+    },
+    /** 写入后端返回的登录态与角色信息。 */
+    setAuthInfo(payload = {}) {
+      this.openid = payload.openid || this.openid
+      this.token = payload.token || this.token
+      if (typeof payload.isAdmin === 'boolean') {
+        this.isAdmin = payload.isAdmin
+      }
+      if (this.openid) {
+        uni.setStorageSync('yc_openid', this.openid)
+      }
+      if (this.token) {
+        uni.setStorageSync('yc_token', this.token)
+      }
       this.persist()
     },
     /** 写入用户认证信息，并标记前端认证流程已完成。 */
     setUserInfo(payload) {
-      this.name = payload?.name || ''
+      this.name = payload?.name || payload?.realName || ''
       // 兼容旧缓存中使用 idCard 字段存手机号的历史数据。
       this.phone = payload?.phone || payload?.idCard || ''
       this.realnameVerified = !!(payload?.name && this.phone)
+      if (!this.realnameVerified && payload?.realName) {
+        this.realnameVerified = !!(payload.realName && this.phone)
+      }
+      if (payload?.role) {
+        this.isAdmin = payload.role === 'admin'
+      }
       this.realnameSubmittedAt = payload?.submittedAt || (this.realnameVerified ? new Date().toISOString() : '')
       this.persist()
     },
@@ -123,6 +158,8 @@ export const useUserStore = defineStore('user', {
       this.name = ''
       this.phone = ''
       this.isAdmin = false
+      this.openid = ''
+      this.token = ''
       this.privacyAgreed = agreed
       this.privacyAgreedAt = agreedAt
       this.sessionCode = ''
@@ -135,6 +172,8 @@ export const useUserStore = defineStore('user', {
       this.cameraPermission = cameraPermission
       this.volunteerPoints = 0
       this.honorPoints = 0
+      uni.removeStorageSync('yc_openid')
+      uni.removeStorageSync('yc_token')
       this.persist()
     }
   }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page page-with-nav">
     <u-tabs :list="tabs" :current="current" @change="onTabChange" />
 
@@ -142,14 +142,12 @@
 </template>
 
 <script setup>
+import { onShow } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
+import { fetchAuditList, submitAudit } from '@/api/admin'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
-import { showSuccessToast } from '@/utils/feedback'
-import {
-  getAdminAuditRecords,
-  updateDemoAuditRecord,
-  updateDemoAuditRecordsBatch
-} from '@/utils/mockData'
+import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
+import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { honorLevels } from '@/utils/rules'
 
 /** 管理员审核页，支持单条审核、批量通过和批量驳回。 */
@@ -162,7 +160,7 @@ const tabs = [
 ]
 
 const current = ref(0)
-const records = ref(getAdminAuditRecords())
+const records = ref([])
 const selectedIds = ref([])
 const detailRecord = ref(null)
 const honorLevelOptions = honorLevels
@@ -191,9 +189,64 @@ const selectAllText = computed(() =>
   filtered.value.length > 0 && selectedIds.value.length === filtered.value.length ? '取消全选' : '全选'
 )
 
-/** 重新加载本地演示审核数据。 */
-const refreshRecords = () => {
-  records.value = getAdminAuditRecords()
+/** 将后端审核记录映射为页面展示字段。 */
+const normalizeAuditRecord = (item = {}) => ({
+  ...item,
+  evidenceFiles: Array.isArray(item.evidenceFiles) ? item.evidenceFiles : [],
+  desc:
+    item.type === 'volunteer'
+      ? `申报积分 ${Number(item.claimedPoints || 0)} 分 · ${item.submitTime || ''}`
+      : `${item.categoryName || '荣誉获奖'} · ${item.submitTime || ''}`
+})
+
+/** 分页拉取审核列表，避免仅显示前 50 条。 */
+const fetchAllAuditPages = async (params = {}) => {
+  const list = []
+  let page = 1
+  const pageSize = 50
+  let total = 0
+
+  do {
+    const data = unwrapApiData(
+      await fetchAuditList({
+        ...params,
+        page,
+        pageSize
+      }),
+      { list: [], total: 0 }
+    )
+    const currentList = Array.isArray(data.list) ? data.list : []
+    total = Number(data.total || 0)
+    list.push(...currentList)
+    if (currentList.length < pageSize) {
+      break
+    }
+    page += 1
+  } while (list.length < total)
+
+  return list
+}
+
+/** 根据当前页签拉取审核列表。 */
+const refreshRecords = async () => {
+  const queryByTab = [
+    { type: 'volunteer', status: 'pending' },
+    { type: 'honor', status: 'pending' },
+    { status: 'approved' },
+    { status: 'rejected' }
+  ]
+  const params = queryByTab[current.value] || {}
+
+  try {
+    const list = await fetchAllAuditPages({
+      ...params,
+      tab: current.value
+    })
+    records.value = list.map(normalizeAuditRecord)
+  } catch (error) {
+    records.value = []
+    showErrorToast(resolveApiErrorMessage(error, '审核列表加载失败，请稍后重试'))
+  }
 }
 
 /** 重置审核表单，避免上一次输入残留。 */
@@ -207,6 +260,7 @@ const resetReviewForm = (record) => {
 const onTabChange = (index) => {
   current.value = typeof index === 'number' ? index : index?.index || 0
   selectedIds.value = []
+  refreshRecords()
 }
 
 /** 打开单条记录详情，并带出可调整字段。 */
@@ -237,65 +291,103 @@ const toggleSelectAll = () => {
 }
 
 /** 通过单条记录，并支持调整积分或荣誉级别。 */
-const approveRecord = (record) => {
-  const payload =
-    record.type === 'volunteer'
-      ? {
-          status: 'approved',
-          approvedPoints: Number(reviewForm.approvedPoints || record.claimedPoints),
-          rejectReason: ''
-        }
-      : {
-          status: 'approved',
-          levelId: reviewForm.levelId || record.levelId,
-          approvedPoints:
-            honorLevelOptions.find((item) => item.id === (reviewForm.levelId || record.levelId))?.points ||
-            record.claimedPoints,
-          claimedPoints:
-            honorLevelOptions.find((item) => item.id === (reviewForm.levelId || record.levelId))?.points ||
-            record.claimedPoints,
-          rejectReason: ''
-        }
+const approveRecord = async (record) => {
+  const payload = {
+    id: record.id,
+    ids: [record.id],
+    type: record.type,
+    pass: true,
+    status: 'approved',
+    approvedPoints:
+      record.type === 'volunteer'
+        ? Number(reviewForm.approvedPoints || record.claimedPoints)
+        : honorLevelOptions.find((item) => item.id === (reviewForm.levelId || record.levelId))?.points ||
+          Number(record.claimedPoints || 0),
+    levelId: record.type === 'honor' ? reviewForm.levelId || record.levelId : ''
+  }
 
-  updateDemoAuditRecord(record.id, payload)
-  refreshRecords()
-  closeDetail()
-  selectedIds.value = selectedIds.value.filter((item) => item !== record.id)
-  showSuccessToast('审核已通过')
+  try {
+    unwrapApiData(await submitAudit(payload), {})
+    await refreshRecords()
+    closeDetail()
+    selectedIds.value = selectedIds.value.filter((item) => item !== record.id)
+    showSuccessToast('审核已通过')
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '审核失败，请稍后重试'))
+  }
 }
 
 /** 驳回单条记录，并记录驳回原因。 */
-const rejectRecord = (record) => {
-  updateDemoAuditRecord(record.id, {
-    status: 'rejected',
-    rejectReason: reviewForm.rejectReason || '请补充材料后重新提交。'
-  })
-  refreshRecords()
-  closeDetail()
-  selectedIds.value = selectedIds.value.filter((item) => item !== record.id)
-  showSuccessToast('已驳回该申报')
+const rejectRecord = async (record) => {
+  try {
+    unwrapApiData(
+      await submitAudit({
+        id: record.id,
+        ids: [record.id],
+        type: record.type,
+        pass: false,
+        status: 'rejected',
+        rejectReason: reviewForm.rejectReason || '请补充材料后重新提交。'
+      }),
+      {}
+    )
+    await refreshRecords()
+    closeDetail()
+    selectedIds.value = selectedIds.value.filter((item) => item !== record.id)
+    showSuccessToast('已驳回该申报')
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '驳回失败，请稍后重试'))
+  }
 }
 
 /** 批量通过当前勾选的待审核记录。 */
-const approveSelected = () => {
+const approveSelected = async () => {
   if (selectedIds.value.length === 0) return
-  updateDemoAuditRecordsBatch(selectedIds.value, { status: 'approved' })
-  refreshRecords()
-  selectedIds.value = []
-  showSuccessToast('批量通过完成')
+  const type = current.value === 0 ? 'volunteer' : current.value === 1 ? 'honor' : ''
+  try {
+    unwrapApiData(
+      await submitAudit({
+        ids: selectedIds.value,
+        type,
+        pass: true,
+        status: 'approved'
+      }),
+      {}
+    )
+    await refreshRecords()
+    selectedIds.value = []
+    showSuccessToast('批量通过完成')
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '批量通过失败，请稍后重试'))
+  }
 }
 
 /** 批量驳回当前勾选的待审核记录。 */
-const rejectSelected = () => {
+const rejectSelected = async () => {
   if (selectedIds.value.length === 0) return
-  updateDemoAuditRecordsBatch(selectedIds.value, {
-    status: 'rejected',
-    rejectReason: '批量驳回，请补充说明后重新提交。'
-  })
-  refreshRecords()
-  selectedIds.value = []
-  showSuccessToast('批量驳回完成')
+  const type = current.value === 0 ? 'volunteer' : current.value === 1 ? 'honor' : ''
+  try {
+    unwrapApiData(
+      await submitAudit({
+        ids: selectedIds.value,
+        type,
+        pass: false,
+        status: 'rejected',
+        rejectReason: '批量驳回，请补充说明后重新提交。'
+      }),
+      {}
+    )
+    await refreshRecords()
+    selectedIds.value = []
+    showSuccessToast('批量驳回完成')
+  } catch (error) {
+    showErrorToast(resolveApiErrorMessage(error, '批量驳回失败，请稍后重试'))
+  }
 }
+
+onShow(() => {
+  refreshRecords()
+})
 </script>
 
 <style scoped>
@@ -489,3 +581,5 @@ const rejectSelected = () => {
   gap: 12px;
 }
 </style>
+
+
