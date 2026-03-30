@@ -120,8 +120,8 @@
           <view class="upload-wrapper">
             <UploadImage v-model="form.files" />
             <view class="upload-placeholder" v-if="!form.files || form.files.length === 0">
-              <uni-icons type="camera-filled" size="32" color="#7B7898"></uni-icons>
-              <text class="upload-text">点击上传照片 (最多9张)</text>
+              <uni-icons type="image" size="32" color="#7B7898"></uni-icons>
+              <text class="upload-text">点击上传图片或文件 (最多9张)</text>
             </view>
           </view>
         </view>
@@ -465,11 +465,7 @@ onShow(() => {
   overflow: hidden;
 }
 
-/* 覆盖 UploadImage 内部样式以适应整宽卡片 */
-::v-deep .upload-wrapper .u-upload {
-  width: 100%;
-  padding: 16px;
-}
+
 
 .upload-placeholder {
   position: absolute;
@@ -483,7 +479,8 @@ onShow(() => {
   justify-content: center;
   gap: 8px;
   pointer-events: none; /* 让点击穿透到上传组件 */
-  background: #fdfdfd;
+  background: transparent;
+  z-index: -1; /* 确保在上传组件下方 */
 }
 
 .upload-text {

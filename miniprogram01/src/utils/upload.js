@@ -123,3 +123,81 @@ export const getPermissionStatusLabel = (status) => {
   }
   return mapping[status] || '未申请'
 }
+
+/** 支持上传的文件扩展名 */
+const ALLOWED_FILE_TYPES = [
+  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  '.pdf', '.txt', '.csv'
+]
+
+/** 上传文件前的权限说明 */
+export const confirmFilePermission = () =>
+  new Promise((resolve) => {
+    uni.showModal({
+      title: '权限申请说明',
+      content: '需要访问您的文件以上传佐证材料（如 Word、Excel、PDF 等），仅在您主动提交申报时使用。是否继续？',
+      success: (res) => resolve(!!res.confirm),
+      fail: () => resolve(false)
+    })
+  })
+
+/** 统一调起文件选择，支持 Word、Excel、PDF 等常见格式。 */
+export const chooseEvidenceFiles = async ({ count = 1, maxSize = MAX_FILE_SIZE } = {}) => {
+  const confirmed = await confirmFilePermission()
+  if (!confirmed) {
+    return { files: [], status: 'cancelled' }
+  }
+
+  try {
+    const res = await new Promise((resolve, reject) => {
+      uni.chooseFile({
+        count,
+        extensions: ALLOWED_FILE_TYPES,
+        success: resolve,
+        fail: reject
+      })
+    })
+
+    const selectedFiles = res?.tempFiles || []
+    const validFiles = selectedFiles
+      .filter((item) => Number(item.size || 0) <= maxSize)
+      .map((item) => ({
+        url: item.tempFilePath || item.path,
+        name: item.name || `file-${Date.now()}`,
+        size: Number(item.size || 0),
+        type: 'file',
+        mimeType: item.type || ''
+      }))
+
+    if (validFiles.length !== selectedFiles.length) {
+      showErrorToast('部分文件超过 50MB，已自动过滤')
+    }
+
+    return {
+      files: validFiles,
+      status: 'granted'
+    }
+  } catch (error) {
+    const message = error?.errMsg || error?.message || ''
+
+    if (isCancelError(message)) {
+      return { files: [], status: 'cancelled' }
+    }
+
+    if (isPermissionDeniedError(message)) {
+      uni.showModal({
+        title: '权限未开启',
+        content: '未获得所需权限，是否前往系统设置重新开启？',
+        success: async (res) => {
+          if (res.confirm) {
+            await openSystemPermissionSetting()
+          }
+        }
+      })
+      return { files: [], status: 'denied' }
+    }
+
+    showErrorToast('选择文件失败，请重试')
+    return { files: [], status: 'failed' }
+  }
+}
