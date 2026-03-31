@@ -1,0 +1,174 @@
+{
+	"pages": [
+		
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/mine/mine",
+			"style": {
+				"navigationBarTitleText": "我的"
+			}
+
+		},
+		
+		{
+			"path": "pages/admin/index",
+			"style": {
+				"navigationBarTitleText": "管理"
+			}
+		},
+
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录与隐私授权"
+			}
+		},
+		{
+			"path": "pages/volunteer/index",
+			"style": {
+				"navigationBarTitleText": "志愿服务"
+			}
+		},
+		{
+			"path": "pages/volunteer/redCulture",
+			"style": {
+				"navigationBarTitleText": "传承红色文化"
+			}
+		},
+		{
+			"path": "pages/volunteer/governance",
+			"style": {
+				"navigationBarTitleText": "参与基层治理"
+			}
+		},
+		{
+			"path": "pages/volunteer/enterprise",
+			"style": {
+				"navigationBarTitleText": "服务企业发展"
+			}
+		},
+		{
+			"path": "pages/volunteer/helpOld",
+			"style": {
+				"navigationBarTitleText": "实施以老助老"
+			}
+		},
+		{
+			"path": "pages/volunteer/other",
+			"style": {
+				"navigationBarTitleText": "其他服务"
+			}
+		},
+		{
+			"path": "pages/volunteer/record",
+			"style": {
+				"navigationBarTitleText": "打卡记录"
+			}
+		},
+		{
+			"path": "pages/honor/index",
+			"style": {
+				"navigationBarTitleText": "荣誉获奖"
+			}
+		},
+		{
+			"path": "pages/honor/national",
+			"style": {
+				"navigationBarTitleText": "国家级荣誉"
+			}
+		},
+		{
+			"path": "pages/honor/provincial",
+			"style": {
+				"navigationBarTitleText": "省部级荣誉"
+			}
+		},
+		{
+			"path": "pages/honor/bureau",
+			"style": {
+				"navigationBarTitleText": "厅局级荣誉"
+			}
+		},
+		{
+			"path": "pages/honor/factory",
+			"style": {
+				"navigationBarTitleText": "厂处级荣誉"
+			}
+		},
+		{
+			"path": "pages/application/index",
+			"style": {
+				"navigationBarTitleText": "我的申请"
+			}
+		},
+		{
+			"path": "pages/privacy/index",
+			"style": {
+				"navigationBarTitleText": "隐私设置"
+			}
+		},
+		{
+			"path": "pages/admin/audit",
+			"style": {
+				"navigationBarTitleText": "数据审核"
+			}
+		},
+		{
+			"path": "pages/admin/import",
+			"style": {
+				"navigationBarTitleText": "批量数据导入"
+			}
+		},
+		{
+			"path": "pages/admin/export",
+			"style": {
+				"navigationBarTitleText": "全量数据导出"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "银才荟",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#8C8C8C",
+		"selectedColor": "#c2410c",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png"
+			},
+			{
+				"pagePath": "pages/mine/mine",
+				"text": "我的",
+				"iconPath": "static/tabbar/mine.png",
+				"selectedIconPath": "static/tabbar/mine-active.png"
+			},
+			{
+				"pagePath": "pages/admin/index",
+				"text": "管理",
+				"iconPath": "static/tabbar/admin.png",
+				"selectedIconPath": "static/tabbar/admin-active.png"
+			}
+		]
+	},
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+		}
+	},
+	"uniIdRouter": {}
+}
