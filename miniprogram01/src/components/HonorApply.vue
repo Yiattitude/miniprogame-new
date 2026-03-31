@@ -185,7 +185,8 @@ const handleSubmit = async () => {
         time: form.time,
         organization: form.organization.trim(),
         points: Number(form.points),
-        files: form.files.map((item) => item?.url || item?.fileID || '').filter(Boolean)
+        // 仅提交云端 fileID，确保管理员审核时能查看到真实附件。
+        files: form.files.map((item) => item?.fileID || '').filter(Boolean)
         }
       }),
       {}

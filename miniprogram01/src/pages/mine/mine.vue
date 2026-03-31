@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="page page-with-tabbar">
 
 
@@ -53,6 +53,7 @@
       </view>
     </view>
   </view>
+  <GlobalBottomNav current="mine" :showBack="false" />
 </template>
 
 <script setup>
@@ -66,6 +67,7 @@ import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { maskName, maskPhone } from '@/utils/rules'
 import Chart from '@/components/Chart.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
 /** 我的页面，展示积分、个人信息与订阅状态。 */
 
@@ -143,6 +145,7 @@ const syncProfile = async () => {
 }
 
 onShow(() => {
+  uni.hideTabBar()
   if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
     return
   }

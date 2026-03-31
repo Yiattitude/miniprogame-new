@@ -17,7 +17,7 @@
             {{ index + 1 }}. {{ item }}
           </text>
           <text class="rule-item" v-if="moduleInfo">
-            {{ (moduleInfo?.rules?.length || 0) + 1 }}. 每次参与积 {{ moduleInfo?.min }}-{{ moduleInfo?.max }} 分。
+            {{ (moduleInfo?.rules?.length || 0) + 1 }}. 每次参与获得积分 {{ moduleInfo?.min }}-{{ moduleInfo?.max }} 分。
           </text>
         </view>
       </view>
@@ -120,8 +120,8 @@
           <view class="upload-wrapper">
             <UploadImage v-model="form.files" />
             <view class="upload-placeholder" v-if="!form.files || form.files.length === 0">
-              <uni-icons type="camera-filled" size="32" color="#7B7898"></uni-icons>
-              <text class="upload-text">点击上传照片 (最多9张)</text>
+              <uni-icons type="image" size="32" color="#7B7898"></uni-icons>
+              <text class="upload-text">点击上传图片或文件 (最多9张)</text>
             </view>
           </view>
         </view>
@@ -251,7 +251,8 @@ const handleSubmit = async () => {
         title: form.title.trim(),
         content: form.content.trim(),
         points: pointsNum,
-        files: form.files.map((item) => item?.url || item?.fileID || '').filter(Boolean)
+        // 仅向后端提交已上传成功的云文件 fileID，避免本地临时路径在审核端失效。
+        files: form.files.map((item) => item?.fileID || '').filter(Boolean)
         }
       }),
       {}
@@ -465,11 +466,7 @@ onShow(() => {
   overflow: hidden;
 }
 
-/* 覆盖 UploadImage 内部样式以适应整宽卡片 */
-::v-deep .upload-wrapper .u-upload {
-  width: 100%;
-  padding: 16px;
-}
+
 
 .upload-placeholder {
   position: absolute;
@@ -483,7 +480,8 @@ onShow(() => {
   justify-content: center;
   gap: 8px;
   pointer-events: none; /* 让点击穿透到上传组件 */
-  background: #fdfdfd;
+  background: transparent;
+  z-index: -1; /* 确保在上传组件下方 */
 }
 
 .upload-text {
@@ -513,5 +511,4 @@ onShow(() => {
   color: #999999;
 }
 </style>
-
 

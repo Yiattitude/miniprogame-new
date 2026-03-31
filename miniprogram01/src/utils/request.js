@@ -13,6 +13,7 @@ const ROUTE_ACTION_MAP = {
   'POST /honor/submit': 'submitHonor',
   'GET /honor/records': 'getHonorRecords',
   'POST /admin/import': 'adminImport',
+  'GET /admin/import-template': 'adminImportTemplate',
   'GET /admin/dashboard': 'adminDashboardSummary',
   'GET /admin/audit': 'adminAuditList',
   'POST /admin/audit': 'adminAuditOperate',

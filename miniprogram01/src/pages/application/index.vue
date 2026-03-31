@@ -69,7 +69,16 @@
           </view>
           <view class="detail-row">
             <text class="detail-label">佐证材料</text>
-            <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') }}</text>
+            <view class="evidence-list">
+              <text
+                v-for="(file, fileIndex) in selectedRecord.evidenceFiles"
+                :key="`${selectedRecord.id}-evidence-${fileIndex}`"
+                class="evidence-item"
+                @click="openEvidenceFile(file)"
+              >
+                {{ resolveEvidenceName(file, fileIndex) }}
+              </text>
+            </view>
           </view>
           <view class="detail-row" v-if="selectedRecord.rejectReason">
             <text class="detail-label">驳回原因</text>
@@ -105,6 +114,7 @@ import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { ensureComplianceReady } from '@/utils/auth'
 import { getHonorLevel, getVolunteerModule } from '@/utils/rules'
+import { previewCloudFile, resolveFileName } from '@/utils/upload'
 
 /** 我的申请页面，展示待审核、已通过、已驳回记录，并支持驳回后重提。 */
 
@@ -232,6 +242,21 @@ const showDetail = (item) => {
   selectedRecord.value = item
 }
 
+/** 将附件字段转换为更易读的文件名。 */
+const resolveEvidenceName = (file, index) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  const name = typeof file === 'object' ? file?.name || '' : ''
+  return name || resolveFileName(fileRef) || `附件${index + 1}`
+}
+
+/** 打开申请详情中的佐证材料。 */
+const openEvidenceFile = async (file) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  await previewCloudFile(fileRef, {
+    fileName: typeof file === 'object' ? file?.name || '' : ''
+  })
+}
+
 /** 关闭申报详情弹层。 */
 const closeDetail = () => {
   selectedRecord.value = null
@@ -324,6 +349,19 @@ onShow(() => {
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evidence-item {
+  font-size: 13px;
+  color: #0076ff;
+  text-decoration: underline;
+  line-height: 1.6;
 }
 
 .record-head {

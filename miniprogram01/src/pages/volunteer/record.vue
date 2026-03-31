@@ -64,7 +64,16 @@
           </view>
           <view class="detail-row" v-if="selectedRecord.evidenceFiles && selectedRecord.evidenceFiles.length">
             <text class="detail-label">佐证材料</text>
-            <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') }}</text>
+            <view class="evidence-list">
+              <text
+                v-for="(file, fileIndex) in selectedRecord.evidenceFiles"
+                :key="`${selectedRecord.id}-evidence-${fileIndex}`"
+                class="evidence-item"
+                @click="openEvidenceFile(file)"
+              >
+                {{ resolveEvidenceName(file, fileIndex) }}
+              </text>
+            </view>
           </view>
         </view>
 
@@ -86,6 +95,7 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast } from '@/utils/feedback'
 import { getVolunteerModule } from '@/utils/rules'
+import { previewCloudFile, resolveFileName } from '@/utils/upload'
 
 /** 志愿服务打卡记录页，支持按年度查看审核通过记录。 */
 
@@ -142,6 +152,21 @@ const onYearConfirm = (value) => {
 /** 打开记录详情。 */
 const showDetail = (record) => {
   selectedRecord.value = record
+}
+
+/** 将附件字段转换为更易读的文件名。 */
+const resolveEvidenceName = (file, index) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  const name = typeof file === 'object' ? file?.name || '' : ''
+  return name || resolveFileName(fileRef) || `附件${index + 1}`
+}
+
+/** 打开打卡详情中的佐证材料。 */
+const openEvidenceFile = async (file) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  await previewCloudFile(fileRef, {
+    fileName: typeof file === 'object' ? file?.name || '' : ''
+  })
 }
 
 /** 关闭记录详情。 */
@@ -216,6 +241,19 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evidence-item {
+  font-size: 13px;
+  color: #0076ff;
+  text-decoration: underline;
+  line-height: 1.6;
 }
 
 .card-header {

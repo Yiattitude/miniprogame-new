@@ -86,7 +86,17 @@
           </view>
           <view class="detail-row">
             <text class="detail-label">佐证材料</text>
-            <text class="detail-text">{{ detailRecord.evidenceFiles.join('、') }}</text>
+            <view class="evidence-list">
+              <text
+                v-for="(file, fileIndex) in detailRecord.evidenceFiles"
+                :key="`${detailRecord.id}-file-${fileIndex}`"
+                class="evidence-item"
+                @click="openEvidenceFile(file)"
+              >
+                {{ resolveEvidenceName(file, fileIndex) }}
+              </text>
+              <text v-if="detailRecord.evidenceFiles.length === 0" class="detail-text">暂无附件</text>
+            </view>
           </view>
         </view>
 
@@ -137,7 +147,7 @@
       </view>
     </view>
 
-    <GlobalBottomNav current="mine" />
+    <GlobalBottomNav current="admin" />
   </view>
 </template>
 
@@ -149,6 +159,7 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { honorLevels } from '@/utils/rules'
+import { previewCloudFile, resolveFileName } from '@/utils/upload'
 
 /** 管理员审核页，支持单条审核、批量通过和批量驳回。 */
 
@@ -198,6 +209,21 @@ const normalizeAuditRecord = (item = {}) => ({
       ? `申报积分 ${Number(item.claimedPoints || 0)} 分 · ${item.submitTime || ''}`
       : `${item.categoryName || '荣誉获奖'} · ${item.submitTime || ''}`
 })
+
+/** 将后端附件字段转换为可读文件名。 */
+const resolveEvidenceName = (file, index) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  const name = typeof file === 'object' ? file?.name || '' : ''
+  return name || resolveFileName(fileRef) || `附件${index + 1}`
+}
+
+/** 管理员审核时预览当前附件。 */
+const openEvidenceFile = async (file) => {
+  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
+  await previewCloudFile(fileRef, {
+    fileName: typeof file === 'object' ? file?.name || '' : ''
+  })
+}
 
 /** 分页拉取审核列表，避免仅显示前 50 条。 */
 const fetchAllAuditPages = async (params = {}) => {
@@ -419,6 +445,19 @@ onShow(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evidence-item {
+  font-size: 13px;
+  color: #0076ff;
+  text-decoration: underline;
+  line-height: 1.6;
 }
 
 .audit-card {
