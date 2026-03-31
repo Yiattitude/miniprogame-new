@@ -216,6 +216,7 @@ exports.main = async (event = {}) => {
       case 'adminExport':
         return await adminExport(data, effectiveOpenid)
 
+<<<<<<< HEAD
       default:
         return {
           code: 400,
@@ -225,6 +226,17 @@ exports.main = async (event = {}) => {
             method,
             routePath
           }
+=======
+      default:
+        return {
+          code: 400,
+          message: '未定义的业务动作',
+          detail: {
+            action: action || '',
+            method,
+            routePath
+          }
+>>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb
         }
     }
   } catch (err) {
@@ -2994,5 +3006,10 @@ async function adminAuditHonor(data = {}, openid) {
     return { code: 500, message: '瀹℃牳澶辫触锛岃绋嶅悗閲嶈瘯' }
   }
 }
+<<<<<<< HEAD
 
 
+=======
+
+
+>>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb

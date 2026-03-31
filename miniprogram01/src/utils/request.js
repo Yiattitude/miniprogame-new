@@ -224,4 +224,8 @@ export const request = (options = {}) => {
     header,
     token
   })
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb
