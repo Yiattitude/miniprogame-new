@@ -1,5 +1,7 @@
 ﻿const cloud = require('wx-server-sdk')
 
+const XLSX = require('xlsx')
+
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
 })
@@ -26,6 +28,22 @@ const VOLUNTEER_MODULE_RULES = {
   'elder-help': { min: 1, max: 5 },
   'other-service': { min: 1, max: 5 }
 }
+const ADMIN_IMPORT_TEMPLATE_FIELDS = {
+  volunteer: ['用户姓名', '邀请码', '模块标识', '活动名称', '时间', '地点', '参与内容', '积分'],
+  honor: ['用户姓名', '邀请码', '荣誉级别', '荣誉名称', '获取时间', '授奖单位', '积分']
+}
+const ADMIN_IMPORT_TEMPLATE_GUIDE_ROWS = [
+  { 分类: '通用说明', 标识: '邀请码', 对应中文: '当前实际匹配用户手机号', 备注: '必填，用于匹配已绑定用户' },
+  { 分类: '志愿服务模块', 标识: 'red-culture', 对应中文: '传承红色文化（关心下一代）', 备注: '积分范围 3-10 分' },
+  { 分类: '志愿服务模块', 标识: 'community-governance', 对应中文: '参与基层治理', 备注: '积分范围 1-5 分' },
+  { 分类: '志愿服务模块', 标识: 'enterprise-service', 对应中文: '服务企业发展', 备注: '积分范围 3-10 分' },
+  { 分类: '志愿服务模块', 标识: 'elder-help', 对应中文: '实施以老助老', 备注: '积分范围 1-5 分' },
+  { 分类: '志愿服务模块', 标识: 'other-service', 对应中文: '其他服务', 备注: '积分范围 1-5 分' },
+  { 分类: '荣誉级别', 标识: 'national', 对应中文: '国家级荣誉', 备注: '固定 20 分' },
+  { 分类: '荣誉级别', 标识: 'provincial', 对应中文: '省部级荣誉', 备注: '固定 16 分' },
+  { 分类: '荣誉级别', 标识: 'bureau', 对应中文: '厅局级荣誉', 备注: '固定 12 分' },
+  { 分类: '荣誉级别', 标识: 'factory', 对应中文: '厂处级荣誉', 备注: '固定 10 分' }
+]
 
 const ROUTE_ACTION_RULES = [
   { method: 'POST', route: '/auth/login', action: 'wechatLogin' },
@@ -36,6 +54,7 @@ const ROUTE_ACTION_RULES = [
   { method: 'POST', route: '/honor/submit', action: 'submitHonor' },
   { method: 'GET', route: '/honor/records', action: 'getHonorRecords' },
   { method: 'POST', route: '/admin/import', action: 'adminImport' },
+  { method: 'GET', route: '/admin/import-template', action: 'adminImportTemplate' },
   { method: 'GET', route: '/admin/dashboard', action: 'adminDashboardSummary' },
   { method: 'POST', route: '/admin/audit', action: 'adminAuditOperate' },
   { method: 'GET', route: '/admin/audit', action: 'adminAuditList' },
@@ -186,6 +205,8 @@ exports.main = async (event = {}) => {
         return await adminAuditHonor(data, effectiveOpenid)
       case 'adminImport':
         return await adminImport(data, effectiveOpenid)
+      case 'adminImportTemplate':
+        return await adminImportTemplate(data, effectiveOpenid)
       case 'adminDashboardSummary':
         return await adminDashboardSummary(data, effectiveOpenid)
       case 'adminAuditOperate':
@@ -1019,6 +1040,113 @@ function formatStamp(date) {
   return `${yyyy}${MM}${dd}-${hh}${mm}${ss}`
 }
 
+/** 下载管理员导入文件并解析为 worksheet 数据。 */
+async function parseAdminImportFile(fileID) {
+  const downloadRes = await cloud.downloadFile({ fileID })
+  const buffer = downloadRes.fileContent
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false })
+  const sheetNames = Array.isArray(workbook.SheetNames) ? workbook.SheetNames : []
+  const volunteerRows = []
+  const honorRows = []
+
+  sheetNames.forEach((sheetName, index) => {
+    const sheet = workbook.Sheets[sheetName]
+    if (!sheet) return
+
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      defval: '',
+      raw: false
+    })
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return
+    }
+
+    const lowerName = String(sheetName || '').trim().toLowerCase()
+    if (lowerName.includes('荣誉') || lowerName.includes('honor')) {
+      honorRows.push(...rows)
+      return
+    }
+
+    if (lowerName.includes('志愿') || lowerName.includes('volunteer')) {
+      volunteerRows.push(...rows)
+      return
+    }
+
+    rows.forEach((row) => {
+      const type = String(row.type || row['类型'] || '').trim().toLowerCase()
+      const looksLikeHonor = type === 'honor' || type.includes('荣誉') || pickValue(row, ['荣誉级别', 'honorLevel', 'levelId'])
+      if (looksLikeHonor) {
+        honorRows.push(row)
+        return
+      }
+
+      if (index === 1) {
+        honorRows.push(row)
+        return
+      }
+
+      volunteerRows.push(row)
+    })
+  })
+
+  return {
+    volunteerRows,
+    honorRows
+  }
+}
+
+/** 生成管理员导入模板 workbook，并上传到云存储。 */
+async function adminImportTemplate(_params = {}, openid) {
+  const adminError = await ensureAdmin(openid)
+  if (adminError) return adminError
+
+  const workbook = XLSX.utils.book_new()
+  const volunteerRows = [
+    {
+      用户姓名: '示例：张三',
+      邀请码: '当前系统实际存储的是手机号',
+      模块标识: 'red-culture',
+      活动名称: '示例：红色故事宣讲',
+      时间: '2026-03-31',
+      地点: '社区活动室',
+      参与内容: '示例：面向青少年开展红色故事宣讲',
+      积分: 5
+    }
+  ]
+  const honorRows = [
+    {
+      用户姓名: '示例：李四',
+      邀请码: '当前系统实际存储的是手机号',
+      荣誉级别: 'national',
+      荣誉名称: '示例：先进个人',
+      获取时间: '2026-03-31',
+      授奖单位: '示例：某单位',
+      积分: 20
+    }
+  ]
+  const guideRows = ADMIN_IMPORT_TEMPLATE_GUIDE_ROWS
+
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(volunteerRows), '志愿服务')
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(honorRows), '荣誉获奖')
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(guideRows), '字段说明')
+
+  const stamp = formatStamp(new Date())
+  const cloudPath = `admin-templates/${openid}/import-template-${stamp}.xlsx`
+  const uploadRes = await cloud.uploadFile({
+    cloudPath,
+    fileContent: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+  })
+
+  return {
+    code: 0,
+    data: {
+      fileID: uploadRes.fileID,
+      volunteerFields: ADMIN_IMPORT_TEMPLATE_FIELDS.volunteer,
+      honorFields: ADMIN_IMPORT_TEMPLATE_FIELDS.honor
+    }
+  }
+}
+
 async function exportReport(_params = {}, openid) {
   const statsRes = await getStatistics(openid)
   if (statsRes.code !== 0) {
@@ -1193,6 +1321,47 @@ async function ensureUser(openid) {
   const res = await db.collection('users').add({ data })
   const created = await db.collection('users').doc(res._id).get()
   return created.data || { _id: res._id, ...data }
+}
+
+/** 按邀请码(当前实际存手机号)匹配管理员导入目标用户，姓名仅作为一致性校验。 */
+async function resolveImportTargetUser(row = {}) {
+  const inviteCode = String(pickValue(row, ['邀请码', 'phone', '手机号', 'mobile'])).trim()
+  if (!inviteCode) {
+    return null
+  }
+
+  const phoneRes = await db.collection('users').where({ phone: inviteCode }).limit(1).get()
+  if (!phoneRes.data || phoneRes.data.length === 0) {
+    return null
+  }
+
+  const targetUser = phoneRes.data[0]
+  const realName = String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim()
+  if (realName && targetUser?.realName && targetUser.realName !== realName) {
+    return null
+  }
+
+  return targetUser
+}
+
+/** 管理员导入或审核通过后同步用户积分缓存字段。 */
+async function updateUserScoreCache(user, { volunteerDelta = 0, honorDelta = 0, checkinDelta = 0 } = {}) {
+  if (!user?._id) return
+
+  const nextVolunteerPoints = Number(user.volunteerPoints || 0) + Number(volunteerDelta || 0)
+  const nextHonorPoints = Number(user.honorPoints || 0) + Number(honorDelta || 0)
+  const nextTotalPoints = nextVolunteerPoints + nextHonorPoints
+  const nextCheckinCount = Math.max(Number(user.checkinCount || 0) + Number(checkinDelta || 0), 0)
+
+  await db.collection('users').doc(user._id).update({
+    data: {
+      volunteerPoints: nextVolunteerPoints,
+      honorPoints: nextHonorPoints,
+      totalPoints: nextTotalPoints,
+      checkinCount: nextCheckinCount,
+      updatedAt: db.serverDate()
+    }
+  })
 }
 
 async function wechatLogin(_data, openid) {
@@ -1551,13 +1720,19 @@ async function getHonorRecords(params = {}, openid) {
   }
 }
 
-/** 管理端导入数据，支持 volunteer/honor 数组批量入库。 */
+/** 管理端导入数据，支持上传 Excel 文件或直接传 volunteer/honor 数组。 */
 async function adminImport(data = {}, openid) {
   const adminError = await ensureAdmin(openid)
   if (adminError) return adminError
 
   const volunteerRows = []
   const honorRows = []
+
+  if (data.fileID) {
+    const parsed = await parseAdminImportFile(String(data.fileID || '').trim())
+    volunteerRows.push(...parsed.volunteerRows)
+    honorRows.push(...parsed.honorRows)
+  }
 
   if (Array.isArray(data.volunteers)) volunteerRows.push(...data.volunteers)
   if (Array.isArray(data.volunteerRows)) volunteerRows.push(...data.volunteerRows)
@@ -1571,12 +1746,22 @@ async function adminImport(data = {}, openid) {
     })
   }
 
+  if (volunteerRows.length === 0 && honorRows.length === 0) {
+    return { code: 400, message: '未解析到可导入的数据，请检查模板内容是否填写完整' }
+  }
+
   let importedVolunteer = 0
   let importedHonor = 0
   const failed = []
 
   for (const row of volunteerRows) {
     try {
+      const targetUser = await resolveImportTargetUser(row)
+      if (!targetUser?._openid) {
+        failed.push({ type: 'volunteer', row, reason: '未匹配到目标用户，请检查邀请码是否正确，或确认姓名与已绑定信息一致' })
+        continue
+      }
+
       const moduleId = String(pickValue(row, ['moduleId', '模块标识'])).trim()
       const title = String(pickValue(row, ['title', 'activityName', '活动名称'])).trim()
       const location = String(pickValue(row, ['location', 'activityLocation', '地点'])).trim()
@@ -1584,11 +1769,18 @@ async function adminImport(data = {}, openid) {
       const points = Number(pickValue(row, ['points', 'declaredPoints', '积分']))
       const checkedAt = parseDateOrNull(pickValue(row, ['activityTime', 'checkedAt', 'time', '时间'])) || new Date()
       const photos = normalizePhotoList(pickValue(row, ['photos', 'proofs', '佐证材料链接']))
-      const targetOpenid = String(pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])).trim()
 
       if (!title || !location || !content || !Number.isFinite(points) || points <= 0) {
         failed.push({ type: 'volunteer', row, reason: '志愿记录字段不完整' })
         continue
+      }
+
+      if (moduleId && VOLUNTEER_MODULE_RULES[moduleId]) {
+        const { min, max } = VOLUNTEER_MODULE_RULES[moduleId]
+        if (points < min || points > max) {
+          failed.push({ type: 'volunteer', row, reason: `该模块积分范围为 ${min}-${max}` })
+          continue
+        }
       }
 
       const record = {
@@ -1599,7 +1791,7 @@ async function adminImport(data = {}, openid) {
         declaredPoints: points,
         photos,
         remark: content,
-        _openid: targetOpenid || openid,
+        _openid: targetUser._openid,
         checkedAt,
         status: 'approved',
         rejectReason: '',
@@ -1613,32 +1805,21 @@ async function adminImport(data = {}, openid) {
 
       const addRes = await db.collection('records').add({ data: record })
       importedVolunteer += 1
+      await updateUserScoreCache(targetUser, { volunteerDelta: points, checkinDelta: 1 })
 
-      if (targetOpenid) {
-        const targetUser = await ensureUser(targetOpenid)
-        const nextPoints = Number(targetUser.totalPoints || 0) + points
-        const nextCheckinCount = Number(targetUser.checkinCount || 0) + 1
-        await db.collection('users').doc(targetUser._id).update({
-          data: {
-            totalPoints: nextPoints,
-            checkinCount: nextCheckinCount,
-            updatedAt: db.serverDate()
-          }
-        })
-        await db.collection('points_logs').add({
-          data: {
-            userId: targetUser._id,
-            userOpenid: targetOpenid,
-            operatorId: openid,
-            changeAmount: points,
-            afterPoints: nextPoints,
-            reason: '管理员导入志愿积分',
-            type: 'import',
-            recordId: addRes._id,
-            createdAt: db.serverDate()
-          }
-        })
-      }
+      await db.collection('points_logs').add({
+        data: {
+          userId: targetUser._id,
+          userOpenid: targetUser._openid,
+          operatorId: openid,
+          changeAmount: points,
+          afterPoints: Number(targetUser.totalPoints || 0) + points,
+          reason: '管理员导入志愿积分',
+          type: 'import',
+          recordId: addRes._id,
+          createdAt: db.serverDate()
+        }
+      })
     } catch (err) {
       failed.push({ type: 'volunteer', row, reason: err.message || '导入失败' })
     }
@@ -1646,6 +1827,12 @@ async function adminImport(data = {}, openid) {
 
   for (const row of honorRows) {
     try {
+      const targetUser = await resolveImportTargetUser(row)
+      if (!targetUser?._openid) {
+        failed.push({ type: 'honor', row, reason: '未匹配到目标用户，请检查邀请码是否正确，或确认姓名与已绑定信息一致' })
+        continue
+      }
+
       const levelId = normalizeHonorLevel(pickValue(row, ['levelId', 'honorLevel', '荣誉级别']))
       const honorPointsRaw = Number(pickValue(row, ['honorPoints', 'points', '积分']))
       const honorPoints = Number.isFinite(honorPointsRaw) && honorPointsRaw > 0
@@ -1655,28 +1842,22 @@ async function adminImport(data = {}, openid) {
       const awardTime = parseDateOrNull(pickValue(row, ['time', 'awardTime', '获取时间'])) || new Date()
       const awardOrganization = String(pickValue(row, ['organization', 'awardOrganization', '授奖单位'])).trim()
       const proofs = normalizePhotoList(pickValue(row, ['proofs', 'files', '佐证材料链接']))
-      const targetOpenid = String(pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])).trim()
 
       if (!levelId || !Number.isFinite(honorPoints) || honorPoints <= 0) {
         failed.push({ type: 'honor', row, reason: '荣誉级别或积分不合法' })
         continue
       }
 
-      let targetUser = null
-      if (targetOpenid) {
-        targetUser = await ensureUser(targetOpenid)
-      }
-
       const record = {
-        userId: targetUser?._id || '',
-        userName: targetUser?.realName || String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim(),
-        phone: targetUser?.phone || String(pickValue(row, ['phone', '手机号'])).trim(),
+        userId: targetUser._id || '',
+        userName: targetUser.realName || String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim(),
+        phone: targetUser.phone || String(pickValue(row, ['邀请码', 'phone', '手机号'])).trim(),
         honorLevel: levelId,
         honorPoints,
         proofs,
         status: 'approved',
         rejectReason: '',
-        _openid: targetOpenid || openid,
+        _openid: targetUser._openid,
         createdAt: db.serverDate(),
         auditedAt: db.serverDate(),
         auditorOpenid: openid,
@@ -1688,29 +1869,21 @@ async function adminImport(data = {}, openid) {
 
       const addRes = await db.collection('honors').add({ data: record })
       importedHonor += 1
+      await updateUserScoreCache(targetUser, { honorDelta: honorPoints })
 
-      if (targetUser && targetOpenid) {
-        const nextPoints = Number(targetUser.totalPoints || 0) + honorPoints
-        await db.collection('users').doc(targetUser._id).update({
-          data: {
-            totalPoints: nextPoints,
-            updatedAt: db.serverDate()
-          }
-        })
-        await db.collection('points_logs').add({
-          data: {
-            userId: targetUser._id,
-            userOpenid: targetOpenid,
-            operatorId: openid,
-            changeAmount: honorPoints,
-            afterPoints: nextPoints,
-            reason: '管理员导入荣誉积分',
-            type: 'import',
-            honorId: addRes._id,
-            createdAt: db.serverDate()
-          }
-        })
-      }
+      await db.collection('points_logs').add({
+        data: {
+          userId: targetUser._id,
+          userOpenid: targetUser._openid,
+          operatorId: openid,
+          changeAmount: honorPoints,
+          afterPoints: Number(targetUser.totalPoints || 0) + honorPoints,
+          reason: '管理员导入荣誉积分',
+          type: 'import',
+          honorId: addRes._id,
+          createdAt: db.serverDate()
+        }
+      })
     } catch (err) {
       failed.push({ type: 'honor', row, reason: err.message || '导入失败' })
     }
@@ -2186,50 +2359,92 @@ async function adminAuditOperate(data = {}, openid) {
   }
 }
 
-/** 管理端导出全量数据，按筛选生成 CSV 并返回 fileID。 */
+/** 管理端导出全量数据，按筛选生成 Excel 并返回 fileID。 */
 async function adminExport(params = {}, openid) {
   const adminError = await ensureAdmin(openid)
   if (adminError) return adminError
 
-  const auditListRes = await adminAuditList(
-    Object.assign({}, params, { page: 1, pageSize: 1000 }),
-    openid
-  )
-  if (auditListRes.code !== 0) {
-    return auditListRes
+  const exportList = []
+  let page = 1
+  let total = 0
+
+  do {
+    const auditListRes = await adminAuditList(
+      Object.assign({}, params, { page, pageSize: MAX_PAGE_SIZE }),
+      openid
+    )
+    if (auditListRes.code !== 0) {
+      return auditListRes
+    }
+
+    const currentList = Array.isArray(auditListRes.data?.list) ? auditListRes.data.list : []
+    total = Number(auditListRes.data?.total || 0)
+    exportList.push(...currentList)
+
+    if (currentList.length < MAX_PAGE_SIZE) {
+      break
+    }
+
+    page += 1
+  } while (exportList.length < total)
+
+  if (exportList.length === 0) {
+    return {
+      code: 0,
+      data: {
+        fileID: '',
+        total: 0
+      }
+    }
   }
 
-  const rows = [
-    ['类型', '标题', '申请人', '分类', '提交时间', '申报积分', '审核状态', '驳回原因']
-  ]
+  const rows = [[
+    '类型',
+    '标题',
+    '申请人',
+    '分类',
+    '提交时间',
+    '活动地点',
+    '授奖单位',
+    '内容说明',
+    '申报积分',
+    '审核状态',
+    '驳回原因',
+    '佐证材料'
+  ]]
 
-  ;(auditListRes.data.list || []).forEach((item) => {
+  exportList.forEach((item) => {
     rows.push([
       item.type === 'volunteer' ? '志愿服务' : '荣誉获奖',
       item.title || '',
       item.applicantName || '',
       item.categoryName || '',
       item.submitTime || '',
+      item.location || '',
+      item.organization || '',
+      item.content || '',
       Number(item.claimedPoints || 0),
       item.statusText || '',
-      item.status === 'rejected' ? String(item.rejectReason || '') : ''
+      item.status === 'rejected' ? String(item.rejectReason || '') : '',
+      Array.isArray(item.evidenceFiles) ? item.evidenceFiles.join('；') : ''
     ])
   })
 
-  const csvBody = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')
-  const csv = `\uFEFF${csvBody}`
   const stamp = formatStamp(new Date())
-  const cloudPath = `admin-exports/${openid}/full-export-${stamp}.csv`
+  const cloudPath = `admin-exports/${openid}/full-export-${stamp}.xlsx`
+  const workbook = XLSX.utils.book_new()
+  const worksheet = XLSX.utils.aoa_to_sheet(rows)
+  XLSX.utils.book_append_sheet(workbook, worksheet, '全量导出')
   const uploadRes = await cloud.uploadFile({
     cloudPath,
-    fileContent: Buffer.from(csv, 'utf8')
+    fileContent: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
   })
 
   return {
     code: 0,
     data: {
       fileID: uploadRes.fileID,
-      total: auditListRes.data.total
+      total: exportList.length
     }
   }
 }
