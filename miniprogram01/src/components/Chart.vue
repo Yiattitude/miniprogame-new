@@ -9,13 +9,21 @@
             v-for="(item, index) in trend"
             :key="index"
             class="bar-item"
+            :style="{ width: `${barWidth}px` }"
           >
             <view class="bar-fill" :style="{ height: `${getBarHeight(item.total)}%` }"></view>
           </view>
         </view>
         
         <view class="x-axis-labels">
-          <text v-for="(item, index) in trend" :key="index" class="x-label">{{ item.label }}</text>
+          <view
+            v-for="(item, index) in trend"
+            :key="index"
+            class="x-label-item"
+            :style="{ width: `${barWidth}px` }"
+          >
+            <text class="x-label">{{ item.label }}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -56,6 +64,16 @@ const maxScore = computed(() => Math.max(...trend.value.map((item) => Number(ite
 
 /** 将积分值按最大值换算为柱子高度百分比。 */
 const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 100 : 0)
+
+/** 计算柱子宽度，确保柱子与标签对齐。 */
+const barWidth = computed(() => {
+  const chartWidth = 320 // 图表容器宽度
+  const padding = 20 // 左右内边距
+  const gap = 10 // 柱子间距
+  const availableWidth = chartWidth - padding
+  const itemCount = trend.value.length
+  return Math.floor(availableWidth / itemCount - gap)
+})
 </script>
 
 <style scoped>
@@ -75,7 +93,7 @@ const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 
   width: 100%;
   height: 200px;
   display: flex;
-  padding-right: 10px; /* 右侧留一点白 */
+  padding: 0 10px;
 }
 
 .chart-axes {
@@ -92,12 +110,11 @@ const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 
   flex: 1;
   display: flex;
   align-items: flex-end;
-  justify-content: space-around;
-  padding: 0 10px;
+  justify-content: space-between;
+  padding: 0 15px;
 }
 
 .bar-item {
-  width: 36px;
   height: 100%;
   display: flex;
   align-items: flex-end;
@@ -106,7 +123,8 @@ const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 
 
 .bar-fill {
   width: 100%;
-  background-color: #3b82f6; 
+  background-color: #3b82f6;
+  border-radius: 4px 4px 0 0;
 }
 
 .x-axis-labels {
@@ -116,15 +134,20 @@ const getBarHeight = (total) => (total > 0 ? (Number(total) / maxScore.value) * 
   width: 100%;
   height: 30px;
   display: flex;
+  justify-content: space-between;
+  padding: 0 15px;
+}
+
+.x-label-item {
+  display: flex;
   align-items: center;
-  justify-content: space-around;
-  padding: 0 10px;
+  justify-content: center;
 }
 
 .x-label {
-  width: 36px;
   text-align: center;
   font-size: 14px;
   color: #9ca3af;
+  white-space: nowrap;
 }
 </style>

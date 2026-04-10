@@ -7,7 +7,7 @@
         为保障您的权益，请您在使用本小程序前仔细阅读并同意《用户隐私保护指引》。
       </text>
       <text class="section">我们收集的信息</text>
-      <text class="paragraph">昵称、邀请码、志愿服务与荣誉申报数据。</text>
+      <text class="paragraph">姓名、手机号码、志愿服务与荣誉申报数据。</text>
       <text class="section">使用目的</text>
       <text class="paragraph">用于身份核验、积分审核与服务通知。</text>
       <text class="section">保存期限</text>
@@ -26,11 +26,11 @@
       <text class="paragraph">为保障积分申报真实性，请完成用户认证信息填写。</text>
       <text class="helper-text">请填写常用昵称和邀请码，后续用于登录识别和审核通知。</text>
       <u-form :model="form" labelPosition="top">
-        <u-form-item label="昵称" required>
-          <u-input v-model="form.name" placeholder="请输入昵称" />
+        <u-form-item label="姓名" required>
+          <u-input v-model="form.name" placeholder="请输入姓名" />
         </u-form-item>
-        <u-form-item label="邀请码" required label-width="120px">
-          <u-input v-model="form.phone" placeholder="请输入邀请码" />
+        <u-form-item label="手机号码" required label-width="120px">
+          <u-input v-model="form.phone" placeholder="请输入手机号码" />
         </u-form-item>
       </u-form>
       <view class="action-group">

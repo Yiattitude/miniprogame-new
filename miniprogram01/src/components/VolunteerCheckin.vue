@@ -100,13 +100,13 @@
         <view class="form-item">
           <view class="form-label">
             <text class="required">*</text>
-            <text class="label-text">申报积分</text>
+            <text class="label-text">申报积分（{{ moduleInfo?.min }}-{{ moduleInfo?.max }}分）</text>
           </view>
           <input
             class="form-input"
             v-model="form.points"
             type="number"
-            placeholder="请填写对应规则的积分值"
+            :placeholder="`请输入${moduleInfo?.min}-${moduleInfo?.max}之间的积分`"
             placeholder-class="input-placeholder"
           />
         </view>

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="page page-with-nav">
     <u-tabs :list="tabs" :current="current" @change="onTabChange" />
 
@@ -100,11 +100,11 @@
             <text class="form-label">调整荣誉级别</text>
             <view class="level-row">
               <view
-                v-for="item in honorLevelOptions"
+                v-for="(item, index) in honorLevelOptions"
                 :key="item.id"
                 class="level-chip"
                 :class="{ active: reviewForm.levelId === item.id }"
-                @click="reviewForm.levelId = item.id"
+                @click="onLevelSelect(item.id)"
               >
                 <text class="level-chip-text">{{ item.name }}</text>
               </view>
@@ -254,6 +254,11 @@ const resetReviewForm = (record) => {
   reviewForm.approvedPoints = `${record?.claimedPoints || ''}`
   reviewForm.levelId = record?.levelId || honorLevelOptions[0]?.id || ''
   reviewForm.rejectReason = record?.rejectReason || ''
+}
+
+/** 选择荣誉级别 */
+const onLevelSelect = (levelId) => {
+  reviewForm.levelId = levelId
 }
 
 /** 切换审核页签时清空已勾选项。 */
