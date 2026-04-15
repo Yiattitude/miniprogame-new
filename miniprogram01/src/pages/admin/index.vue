@@ -22,6 +22,10 @@
     </view>
 
     <view class="card-list">
+      <view v-if="userStore.isAdmin" class="card" @click="goTo('/pages/admin/roles')">
+        <text class="card-title">{{ roleEntryTitle }}</text>
+        <text class="card-desc">{{ roleEntryDesc }}</text>
+      </view>
       <view class="card" @click="goTo('/pages/admin/import')">
         <text class="card-title">批量数据导入</text>
         <text class="card-desc">查看模板字段并提交导入任务</text>
@@ -49,7 +53,7 @@
 
 <script setup>
 import { onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { fetchAdminDashboard } from '@/api/admin'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast } from '@/utils/feedback'
@@ -59,6 +63,13 @@ import { useUserStore } from '@/store'
 /** 管理后台首页，展示审核统计和最近操作日志。 */
 
 const userStore = useUserStore()
+const isSuperAdmin = computed(() => userStore.role === 'super-admin')
+const roleEntryTitle = computed(() => (isSuperAdmin.value ? '设置管理员' : '禁用用户'))
+const roleEntryDesc = computed(() =>
+  isSuperAdmin.value
+    ? '进入账号列表，一键设为管理员或回收管理员'
+    : '进入账号列表，按需禁用普通用户或管理员账号'
+)
 const summary = ref({
   pendingVolunteerCount: 0,
   pendingHonorCount: 0,

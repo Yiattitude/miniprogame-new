@@ -58,6 +58,8 @@ import { wxLogin } from '@/utils/auth'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { isPhoneValid } from '@/utils/rules'
 
+const isAdminRole = (role) => role === 'admin' || role === 'super-admin'
+
 /** 登录与合规入口页，统一处理隐私同意、微信登录和用户认证。 */
 
 const userStore = useUserStore()
@@ -89,7 +91,7 @@ const applyUserProfile = (profile = {}) => {
     role: userInfo.role || '',
     submittedAt: new Date().toISOString()
   })
-  userStore.setAdmin(userInfo.role === 'admin')
+  userStore.setAdmin(isAdminRole(userInfo.role))
   if (profile.scoreSummary) {
     userStore.setPoints({
       volunteerPoints: Number(profile.scoreSummary.volunteerPoints || 0),
@@ -134,7 +136,7 @@ const handleAgree = async () => {
     userStore.setAuthInfo({
       openid: loginData.openid || '',
       token: loginData.token || '',
-      isAdmin: loginData.userInfo?.role === 'admin'
+      isAdmin: isAdminRole(loginData.userInfo?.role)
     })
 
     if (loginData.userInfo) {
@@ -202,7 +204,7 @@ const handleSubmit = async () => {
     userStore.setAuthInfo({
       openid: bindData.openid || userStore.openid,
       token: bindData.token || userStore.token,
-      isAdmin: bindData.userInfo?.role === 'admin'
+      isAdmin: isAdminRole(bindData.userInfo?.role)
     })
 
     if (bindData.userInfo) {

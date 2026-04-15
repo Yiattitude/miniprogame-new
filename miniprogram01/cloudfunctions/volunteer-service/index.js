@@ -12,6 +12,9 @@ const DEFAULT_PAGE_SIZE = 10
 const MAX_PAGE_SIZE = 50
 const MAX_CHECKIN_PHOTOS = 9
 const ADMIN_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const ROLE_SUPER_ADMIN = 'super-admin'
+const ROLE_ADMIN = 'admin'
+const ROLE_MEMBER = 'member'
 
 const HONOR_LEVEL_POINTS_MAP = {
   national: 20,
@@ -39,7 +42,10 @@ const ROUTE_ACTION_RULES = [
   { method: 'GET', route: '/admin/dashboard', action: 'adminDashboardSummary' },
   { method: 'POST', route: '/admin/audit', action: 'adminAuditOperate' },
   { method: 'GET', route: '/admin/audit', action: 'adminAuditList' },
-  { method: 'GET', route: '/admin/export', action: 'adminExport' }
+  { method: 'GET', route: '/admin/export', action: 'adminExport' },
+  { method: 'GET', route: '/admin/users', action: 'adminGetUsers' },
+  { method: 'POST', route: '/admin/users/role', action: 'adminSetUserRole' },
+  { method: 'POST', route: '/admin/users/disable', action: 'adminDisableUser' }
 ]
 
 /** 褰掍竴鍖栬矾鐢辫矾寰勶紝鍏煎浜戝嚱鏁?HTTP 涓庡墠绔?URL 鎷兼帴鏍煎紡銆?*/
@@ -194,6 +200,10 @@ exports.main = async (event = {}) => {
         return await adminAuditList(data, effectiveOpenid)
       case 'adminExport':
         return await adminExport(data, effectiveOpenid)
+      case 'adminSetUserRole':
+        return await adminSetUserRole(data, effectiveOpenid)
+      case 'adminDisableUser':
+        return await adminDisableUser(data, effectiveOpenid)
 
       default:
         return {
@@ -502,25 +512,67 @@ function isAdminSessionActive(user) {
   return Number.isFinite(expiresAt) && expiresAt > Date.now()
 }
 
+function normalizeRoleValue(role) {
+  const normalized = String(role || '').trim()
+  if (normalized === ROLE_SUPER_ADMIN || normalized === ROLE_ADMIN || normalized === ROLE_MEMBER) {
+    return normalized
+  }
+  return ROLE_MEMBER
+}
+
+function isAdminLikeRole(role) {
+  return role === ROLE_SUPER_ADMIN || role === ROLE_ADMIN
+}
+
 async function getUserRole(openid) {
   try {
     const user = await getUserByOpenid(openid)
-    if (user && (String(user.role || 'member') === 'admin' || isAdminSessionActive(user))) {
-      return 'admin'
+    if (user) {
+      const role = normalizeRoleValue(user.role)
+      if (role === ROLE_SUPER_ADMIN) return ROLE_SUPER_ADMIN
+      if (role === ROLE_ADMIN || isAdminSessionActive(user)) return ROLE_ADMIN
     }
   } catch (err) {
     // 鍦ㄦ湭鍒涘缓 users 闆嗗悎鏃跺厹搴曚负鏅€氭垚鍛?    console.warn('[getUserRole] fallback to member:', err && err.message)
   }
 
-  return 'member'
+  return ROLE_MEMBER
 }
 
 async function ensureAdmin(openid) {
   const role = await getUserRole(openid)
-  if (role !== 'admin') {
+  if (!isAdminLikeRole(role)) {
     return { code: 403, message: '浠呯鐞嗗憳鍙墽琛岃鎿嶄綔' }
   }
 
+  return null
+}
+
+async function ensureSingleSuperAdmin() {
+  const countRes = await db.collection('users').where({ role: ROLE_SUPER_ADMIN }).count()
+  if (Number(countRes.total || 0) !== 1) {
+    return { code: 409, message: 'super-admin 配置异常，系统要求且仅允许 1 个 super-admin' }
+  }
+  return null
+}
+
+async function ensureSuperAdmin(openid) {
+  const singleError = await ensureSingleSuperAdmin()
+  if (singleError) return singleError
+
+  const user = await getUserByOpenid(openid)
+  if (!user || normalizeRoleValue(user.role) !== ROLE_SUPER_ADMIN) {
+    return { code: 403, message: '仅 super-admin 可执行该操作' }
+  }
+
+  return null
+}
+
+async function ensurePureAdmin(openid) {
+  const user = await getUserByOpenid(openid)
+  if (!user || normalizeRoleValue(user.role) !== ROLE_ADMIN) {
+    return { code: 403, message: '仅 admin 可执行该操作' }
+  }
   return null
 }
 
@@ -1055,7 +1107,7 @@ async function findAdminByCredential(account, password) {
   const inputPassword = String(password || '').trim()
   if (!inputAccount || !inputPassword) return null
 
-  const res = await db.collection('users').where({ role: 'admin' }).limit(100).get()
+  const res = await db.collection('users').where({ role: _.in([ROLE_ADMIN, ROLE_SUPER_ADMIN]) }).limit(100).get()
   const adminUsers = res.data || []
 
   for (const user of adminUsers) {
@@ -1140,7 +1192,7 @@ async function adminLogin(data = {}, openid) {
     nickname: displayName,
     avatar: credentialUser.avatar || credentialUser.avatarUrl || '',
     avatarUrl: credentialUser.avatarUrl || credentialUser.avatar || '',
-    role: 'admin'
+    role: normalizeRoleValue(normalizedUser?.role)
   }
 
   return {
@@ -1154,7 +1206,10 @@ async function adminLogin(data = {}, openid) {
 
 function normalizeUserData(user) {
   if (!user) return user
-  const role = user.role === 'admin' || isAdminSessionActive(user) ? 'admin' : 'member'
+  const rawRole = normalizeRoleValue(user.role)
+  const role = rawRole === ROLE_SUPER_ADMIN
+    ? ROLE_SUPER_ADMIN
+    : (rawRole === ROLE_ADMIN || isAdminSessionActive(user) ? ROLE_ADMIN : ROLE_MEMBER)
   return {
     ...user,
     totalPoints: Number(user.totalPoints || 0),
@@ -1201,6 +1256,9 @@ async function wechatLogin(_data, openid) {
   }
 
   const user = await ensureUser(openid)
+  if (user?.isDeleted || String(user?.status || '') === 'disabled') {
+    return { code: 403, message: '账号已禁用，请联系管理员' }
+  }
   const normalized = normalizeUserData(user)
   const needBinding = !normalized?.realName || !normalized?.phone
 
@@ -1228,6 +1286,9 @@ async function bindUser(data = {}, openidFromCtx) {
   }
 
   const user = await getUserByOpenid(openid)
+  if (user?.isDeleted || String(user?.status || '') === 'disabled') {
+    return { code: 403, message: '账号已禁用，请联系管理员' }
+  }
   const updateData = {
     realName,
     phone,
@@ -1271,6 +1332,9 @@ async function getUserProfile(openid) {
   }
 
   let user = await ensureUser(openid)
+  if (user?.isDeleted || String(user?.status || '') === 'disabled') {
+    return { code: 403, message: '账号已禁用，请联系管理员' }
+  }
   let normalizedUser = normalizeUserData(user)
   const needBinding = !normalizedUser?.realName || !normalizedUser?.phone
   const needMigrateScoreFields =
@@ -2295,10 +2359,15 @@ async function adminGetUsers(params = {}, openid) {
   const { page, pageSize, skip } = normalizePagination(params.page, params.pageSize)
   const keyword = String(params.keyword || '').trim()
 
-  let query = db.collection('users')
+  const includeDeleted = String(params.includeDeleted || '').trim() === '1'
+  const baseWhere = includeDeleted ? {} : { isDeleted: _.neq(true) }
+  let query = db.collection('users').where(baseWhere)
   if (keyword) {
     const kw = db.RegExp({ regexp: keyword, options: 'i' })
-    query = query.where(_.or([{ realName: kw }, { phone: kw }]))
+    const keywordWhere = _.or([{ realName: kw }, { phone: kw }])
+    query = includeDeleted
+      ? db.collection('users').where(keywordWhere)
+      : db.collection('users').where(_.and([baseWhere, keywordWhere]))
   }
 
   const countRes = await query.count()
@@ -2316,6 +2385,144 @@ async function adminGetUsers(params = {}, openid) {
       total: countRes.total,
       page,
       pageSize
+    }
+  }
+}
+
+async function adminSetUserRole(data = {}, openid) {
+  const superAdminError = await ensureSuperAdmin(openid)
+  if (superAdminError) return superAdminError
+
+  const targetUserId = String(data.targetUserId || data.userId || data.id || '').trim()
+  const targetRole = normalizeRoleValue(data.targetRole || data.role)
+
+  if (!targetUserId) return { code: 400, message: '缺少目标用户 ID' }
+  if (targetRole !== ROLE_ADMIN && targetRole !== ROLE_MEMBER) {
+    return { code: 400, message: '仅支持设置为 admin 或 member' }
+  }
+
+  const operator = await getUserByOpenid(openid)
+  if (!operator || !operator._id) {
+    return { code: 403, message: '当前账号无有效权限上下文' }
+  }
+
+  let targetUser = null
+  try {
+    const targetRes = await db.collection('users').doc(targetUserId).get()
+    targetUser = targetRes.data || null
+  } catch (err) {
+    targetUser = null
+  }
+
+  if (!targetUser) return { code: 404, message: '目标用户不存在' }
+  if (String(targetUser._id) === String(operator._id)) {
+    return { code: 403, message: '禁止修改自己的权限' }
+  }
+
+  const currentRole = normalizeRoleValue(targetUser.role)
+  if (currentRole === ROLE_SUPER_ADMIN) {
+    return { code: 403, message: 'super-admin 不可被修改或降级' }
+  }
+
+  if (currentRole === targetRole) {
+    return {
+      code: 0,
+      data: {
+        unchanged: true,
+        user: normalizeUserData(targetUser)
+      }
+    }
+  }
+
+  const updateData = {
+    role: targetRole,
+    updatedAt: db.serverDate()
+  }
+
+  // 由 admin 回收为 member 时，立即清空管理会话，防止旧会话残留。
+  if (targetRole === ROLE_MEMBER) {
+    updateData.adminSessionAccount = ''
+    updateData.adminSessionUserId = ''
+    updateData.adminSessionAt = null
+    updateData.adminSessionExpiresAt = null
+  }
+
+  await db.collection('users').doc(targetUser._id).update({ data: updateData })
+  const latestRes = await db.collection('users').doc(targetUser._id).get()
+
+  return {
+    code: 0,
+    data: {
+      previousRole: currentRole,
+      role: targetRole,
+      user: normalizeUserData(latestRes.data || targetUser)
+    }
+  }
+}
+
+async function adminDisableUser(data = {}, openid) {
+  const pureAdminError = await ensurePureAdmin(openid)
+  if (pureAdminError) return pureAdminError
+
+  const targetUserId = String(data.targetUserId || data.userId || data.id || '').trim()
+  const reason = String(data.reason || '').trim()
+
+  if (!targetUserId) return { code: 400, message: '缺少目标用户 ID' }
+
+  const operator = await getUserByOpenid(openid)
+  if (!operator || !operator._id) {
+    return { code: 403, message: '当前账号无有效权限上下文' }
+  }
+
+  let targetUser = null
+  try {
+    const targetRes = await db.collection('users').doc(targetUserId).get()
+    targetUser = targetRes.data || null
+  } catch (err) {
+    targetUser = null
+  }
+
+  if (!targetUser) return { code: 404, message: '目标用户不存在' }
+  if (String(targetUser._id) === String(operator._id)) {
+    return { code: 403, message: '禁止禁用自己的账号' }
+  }
+
+  const currentRole = normalizeRoleValue(targetUser.role)
+  if (currentRole === ROLE_SUPER_ADMIN) {
+    return { code: 403, message: 'super-admin 不可被禁用' }
+  }
+
+  if (targetUser?.isDeleted || String(targetUser?.status || '') === 'disabled') {
+    return {
+      code: 0,
+      data: {
+        unchanged: true,
+        user: normalizeUserData(targetUser)
+      }
+    }
+  }
+
+  await db.collection('users').doc(targetUser._id).update({
+    data: {
+      isDeleted: true,
+      status: 'disabled',
+      deleteReason: reason,
+      deletedAt: db.serverDate(),
+      deletedBy: operator._id,
+      role: ROLE_MEMBER,
+      adminSessionAccount: '',
+      adminSessionUserId: '',
+      adminSessionAt: null,
+      adminSessionExpiresAt: null,
+      updatedAt: db.serverDate()
+    }
+  })
+
+  const latestRes = await db.collection('users').doc(targetUser._id).get()
+  return {
+    code: 0,
+    data: {
+      user: normalizeUserData(latestRes.data || targetUser)
     }
   }
 }

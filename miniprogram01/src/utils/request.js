@@ -16,7 +16,10 @@ const ROUTE_ACTION_MAP = {
   'GET /admin/dashboard': 'adminDashboardSummary',
   'GET /admin/audit': 'adminAuditList',
   'POST /admin/audit': 'adminAuditOperate',
-  'GET /admin/export': 'adminExport'
+  'GET /admin/export': 'adminExport',
+  'GET /admin/users': 'adminGetUsers',
+  'POST /admin/users/role': 'adminSetUserRole',
+  'POST /admin/users/disable': 'adminDisableUser'
 }
 
 let wxCloudInitialized = false

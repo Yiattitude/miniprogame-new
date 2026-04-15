@@ -69,6 +69,8 @@ import Chart from '@/components/Chart.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
+const isAdminRole = (role) => role === 'admin' || role === 'super-admin'
+
 /** 我的页面，展示积分、个人信息与订阅状态。 */
 
 const userStore = useUserStore()
@@ -118,7 +120,7 @@ const syncProfile = async () => {
       role: userInfo.role || '',
       submittedAt: new Date().toISOString()
     })
-    userStore.setAdmin(userInfo.role === 'admin')
+    userStore.setAdmin(isAdminRole(userInfo.role))
     if (profileData.scoreSummary) {
       const volunteerPoints = Number(profileData.scoreSummary.volunteerPoints || 0)
       const honorPoints = Number(profileData.scoreSummary.honorPoints || 0)

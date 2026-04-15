@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'yc_user_state'
+const ADMIN_ROLE_SET = new Set(['admin', 'super-admin'])
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     name: '',
     phone: '',
+    role: 'member',
     isAdmin: false,
     openid: '',
     token: '',
@@ -33,6 +35,7 @@ export const useUserStore = defineStore('user', {
       if (saved) {
         this.name = saved.name || ''
         this.phone = saved.phone || saved.idCard || ''
+        this.role = saved.role || 'member'
         this.isAdmin = !!saved.isAdmin
         this.openid = saved.openid || ''
         this.token = saved.token || ''
@@ -55,6 +58,7 @@ export const useUserStore = defineStore('user', {
       uni.setStorageSync(STORAGE_KEY, {
         name: this.name,
         phone: this.phone,
+        role: this.role,
         isAdmin: this.isAdmin,
         openid: this.openid,
         token: this.token,
@@ -117,12 +121,13 @@ export const useUserStore = defineStore('user', {
       this.name = payload?.name || payload?.realName || ''
       // 兼容旧缓存中使用 idCard 字段存手机号的历史数据。
       this.phone = payload?.phone || payload?.idCard || ''
+      this.role = payload?.role || this.role || 'member'
       this.realnameVerified = !!(payload?.name && this.phone)
       if (!this.realnameVerified && payload?.realName) {
         this.realnameVerified = !!(payload.realName && this.phone)
       }
       if (payload?.role) {
-        this.isAdmin = payload.role === 'admin'
+        this.isAdmin = ADMIN_ROLE_SET.has(payload.role)
       }
       this.realnameSubmittedAt = payload?.submittedAt || (this.realnameVerified ? new Date().toISOString() : '')
       this.persist()
@@ -157,6 +162,7 @@ export const useUserStore = defineStore('user', {
       const cameraPermission = this.cameraPermission
       this.name = ''
       this.phone = ''
+      this.role = 'member'
       this.isAdmin = false
       this.openid = ''
       this.token = ''

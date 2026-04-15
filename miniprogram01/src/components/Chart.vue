@@ -54,8 +54,8 @@ const trend = computed(() => {
   }
 
   const currentYear = new Date().getFullYear()
-  return Array.from({ length: 5 }, (_, index) => ({
-    label: `${currentYear - 4 + index}年`,
+  return Array.from({ length: 4 }, (_, index) => ({
+    label: `${currentYear - 3 + index}年`,
     total: 0
   }))
 })
