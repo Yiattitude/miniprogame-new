@@ -1,68 +1,65 @@
-﻿<template>
-  <view class="page page-with-nav">
-    <view class="section-title">全量数据导出</view>
-    <text class="helper-text">请先选择筛选条件，再查看导出预览。未选择时将展示全部真实审核数据。</text>
-    <view class="form-card">
-      <u-form :model="form" labelPosition="top">
-        <!-- 年度选择 -->
-        <u-form-item label="年度">
-          <u-picker
-            v-model="showYearPicker"
-            :range="yearOptions"
-            @confirm="onYearConfirm"
-            @cancel="showYearPicker = false"
-          >
-            <view class="picker-input">
-              <text>{{ form.year || '请选择' }}</text>
-              <uni-icons type="arrow-down" size="16" color="#999999"></uni-icons>
-            </view>
-          </u-picker>
-        </u-form-item>
+<template>
+  <view class="page page-with-nav page-shell page-shell--admin">
+    <view class="page-hero page-hero--admin">
+      <view class="hero-badge">
+        <uni-icons type="download-filled" size="16" color="#ffffff" />
+        <text>全量数据导出</text>
+      </view>
+      <text class="hero-title">先筛选、后预览，再执行 Excel 导出</text>
+      <text class="hero-subtitle"
+        >支持按年度、模块、审核状态和用户进行筛选，减少导出结果重复核对的工作量。</text
+      >
+    </view>
 
-        <!-- 模块 / 荣誉级别选择 -->
-        <u-form-item label="模块 / 荣誉级别">
-          <u-picker
-            v-model="showModulePicker"
-            :range="moduleOptions"
-            @confirm="onModuleConfirm"
-            @cancel="showModulePicker = false"
+    <view class="themed-form-card">
+      <u-form :model="form" label-position="top">
+        <view class="field-shell">
+          <text class="field-label">年度</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.year }"
+            @click="showYearPicker = true"
           >
-            <view class="picker-input">
-              <text>{{ form.module || '请选择' }}</text>
-              <uni-icons type="arrow-down" size="16" color="#999999"></uni-icons>
-            </view>
-          </u-picker>
-        </u-form-item>
+            <text>{{ form.year || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
+          </view>
+        </view>
 
-        <!-- 审核状态选择 -->
-        <u-form-item label="审核状态">
-          <u-picker
-            v-model="showStatusPicker"
-            :range="statusOptions"
-            @confirm="onStatusConfirm"
-            @cancel="showStatusPicker = false"
+        <view class="field-shell">
+          <text class="field-label">模块 / 荣誉级别</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.module }"
+            @click="showModulePicker = true"
           >
-            <view class="picker-input">
-              <text>{{ form.status || '请选择' }}</text>
-              <uni-icons type="arrow-down" size="16" color="#999999"></uni-icons>
-            </view>
-          </u-picker>
-        </u-form-item>
+            <text>{{ form.module || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
+          </view>
+        </view>
 
-        <!-- 用户选择 -->
-        <u-form-item label="用户">
-          <u-picker
-            v-model="showUserPicker"
-            :range="userOptions"
-            @confirm="onUserConfirm"
-            @cancel="showUserPicker = false"
+        <view class="field-shell">
+          <text class="field-label">审核状态</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.status }"
+            @click="showStatusPicker = true"
           >
-            <view class="picker-input">
-              <text>{{ form.keyword || '请选择' }}</text>
-              <uni-icons type="arrow-down" size="16" color="#999999"></uni-icons>
-            </view>
-          </u-picker>
-        </u-form-item>
+            <text>{{ form.status || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
+          </view>
+        </view>
+
+        <view class="field-shell">
+          <text class="field-label">用户</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.keyword }"
+            @click="showUserPicker = true"
+          >
+            <text>{{ form.keyword || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
+          </view>
+        </view>
       </u-form>
 
       <view class="action-group">
@@ -71,21 +68,56 @@
       </view>
     </view>
 
-    <view class="section-title">导出预览</view>
-    <text class="preview-desc">当前筛选结果共 {{ previewRows.length }} 条</text>
+    <view class="section-heading">
+      <text class="section-heading__title">导出预览</text>
+      <text class="section-heading__desc">当前共 {{ previewRows.length }} 条</text>
+    </view>
 
-    <view v-if="previewRows.length > 0" class="preview-list">
-      <view v-for="item in previewRows" :key="item.id" class="preview-card">
-        <text class="preview-name">{{ item.title }}</text>
-        <text class="preview-meta">{{ item.applicantName }} · {{ item.typeLabel }}</text>
-        <text class="preview-meta">{{ item.moduleLabel }} · {{ item.statusText }} · {{ item.scoreText }}</text>
-        <text class="preview-meta">提交时间：{{ item.submitTime }}</text>
+    <view v-if="previewRows.length > 0" class="simple-list">
+      <view v-for="item in previewRows" :key="item.id" class="list-row-card">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">{{ item.title }}</text>
+          <text class="list-row-card__desc">{{ item.applicantName }} · {{ item.typeLabel }}</text>
+          <text class="list-row-card__desc"
+            >{{ item.moduleLabel }} · {{ item.statusText }} · {{ item.scoreText }}</text
+          >
+          <text class="list-row-card__meta">提交时间：{{ item.submitTime }}</text>
+        </view>
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">当前筛选条件下没有可导出的记录</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="download-filled" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">当前筛选下暂无可导出记录</text>
+      <text class="empty-state-pro__desc">可调整筛选条件后再次查看预览结果。</text>
     </view>
+
+    <u-picker
+      :show="showYearPicker"
+      :columns="[yearOptions]"
+      @confirm="onYearConfirm"
+      @cancel="showYearPicker = false"
+    />
+    <u-picker
+      :show="showModulePicker"
+      :columns="[moduleOptions]"
+      @confirm="onModuleConfirm"
+      @cancel="showModulePicker = false"
+    />
+    <u-picker
+      :show="showStatusPicker"
+      :columns="[statusOptions]"
+      @confirm="onStatusConfirm"
+      @cancel="showStatusPicker = false"
+    />
+    <u-picker
+      :show="showUserPicker"
+      :columns="[userOptions]"
+      @confirm="onUserConfirm"
+      @cancel="showUserPicker = false"
+    />
 
     <GlobalBottomNav current="admin" />
   </view>
@@ -110,24 +142,18 @@ const form = reactive({
 })
 
 const previewRows = ref([])
-
-// 选择框状态
 const showYearPicker = ref(false)
 const showModulePicker = ref(false)
 const showStatusPicker = ref(false)
 const showUserPicker = ref(false)
 
-// 年度选项（最近5年）
+/** 最近五年的年度选项。 */
 const currentYear = new Date().getFullYear()
-const yearOptions = computed(() => {
-  const options = []
-  for (let i = 0; i < 5; i++) {
-    options.push(`${currentYear - i}`)
-  }
-  return options
-})
+const yearOptions = computed(() =>
+  Array.from({ length: 5 }, (_, index) => `${currentYear - index}`)
+)
 
-// 模块/荣誉级别选项
+/** 模块/荣誉级别选项。 */
 const moduleOptions = [
   '传承红色文化',
   '参与基层治理',
@@ -140,25 +166,17 @@ const moduleOptions = [
   '厂处级荣誉'
 ]
 
-// 审核状态选项
-const statusOptions = [
-  '待审核',
-  '已审核',
-  '已驳回'
-]
+/** 审核状态选项。 */
+const statusOptions = ['待审核', '已审核', '已驳回']
 
-// 用户选项（模拟数据，实际应从后端获取）
-const userOptions = [
-  '全部用户',
-  '张三',
-  '李四',
-  '王五',
-  '赵六'
-]
+/** 用户选项，当前使用前端占位数据。 */
+const userOptions = ['全部用户', '张三', '李四', '王五', '赵六']
 
 /** 标准化状态输入，兼容中文与英文筛选。 */
 const normalizeStatus = (value = '') => {
-  const raw = String(value || '').trim().toLowerCase()
+  const raw = String(value || '')
+    .trim()
+    .toLowerCase()
   if (!raw) return ''
   if (raw === 'pending' || raw.includes('待')) return 'pending'
   if (raw === 'approved' || raw.includes('通过') || raw.includes('审核')) return 'approved'
@@ -174,27 +192,27 @@ const buildQuery = () => ({
   keyword: form.keyword === '全部用户' ? '' : form.keyword.trim()
 })
 
-/** 年度选择确认 */
-const onYearConfirm = (e) => {
-  form.year = e.value[0]
+/** 年度选择确认。 */
+const onYearConfirm = ({ value }) => {
+  form.year = value?.[0] || ''
   showYearPicker.value = false
 }
 
-/** 模块选择确认 */
-const onModuleConfirm = (e) => {
-  form.module = e.value[0]
+/** 模块选择确认。 */
+const onModuleConfirm = ({ value }) => {
+  form.module = value?.[0] || ''
   showModulePicker.value = false
 }
 
-/** 状态选择确认 */
-const onStatusConfirm = (e) => {
-  form.status = e.value[0]
+/** 状态选择确认。 */
+const onStatusConfirm = ({ value }) => {
+  form.status = value?.[0] || ''
   showStatusPicker.value = false
 }
 
-/** 用户选择确认 */
-const onUserConfirm = (e) => {
-  form.keyword = e.value[0]
+/** 用户选择确认。 */
+const onUserConfirm = ({ value }) => {
+  form.keyword = value?.[0] || ''
   showUserPicker.value = false
 }
 
@@ -285,112 +303,10 @@ onShow(() => {
 </script>
 
 <style scoped>
-.form-card {
-  border-radius: 16px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 18px;
-}
-
 .action-group {
-  margin-top: 24px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
-.helper-text {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.preview-desc {
-  font-size: 14px;
-  color: #64748b;
-  margin-bottom: 16px;
-}
-
-.preview-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.preview-card {
-  border-radius: 16px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border: 1px solid #e2e8f0;
-}
-
-.preview-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-  line-height: 1.7;
-}
-
-.preview-meta {
-  font-size: 13px;
-  color: #475569;
-}
-
-.empty-card {
-  border-radius: 16px;
-  padding: 28px 20px;
-  text-align: center;
-  border: 1px solid #e2e8f0;
-}
-
-.empty-text {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-.section-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  margin: 20px 0;
-}
-
-.page-with-nav {
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
-}
-
-/* 选择框样式 */
-.picker-input {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 48px;
-  padding: 0 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  background: #ffffff;
-  box-sizing: border-box;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.picker-input:hover {
-  border-color: #0076FF;
-  box-shadow: 0 0 0 2px rgba(0, 118, 255, 0.1);
-}
-
-.picker-input text {
-  font-size: 16px;
-  color: #333333;
-}
-
-.picker-input text:empty {
-  color: #999999;
-}
 </style>
-
-

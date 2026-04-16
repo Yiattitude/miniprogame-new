@@ -59,9 +59,7 @@ function normalizeRoutePath(rawPath = '') {
   if (!cleanPath) return ''
 
   const normalized = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`
-  return normalized.endsWith('/') && normalized.length > 1
-    ? normalized.slice(0, -1)
-    : normalized
+  return normalized.endsWith('/') && normalized.length > 1 ? normalized.slice(0, -1) : normalized
 }
 
 /** 瀹夊叏瑙ｆ瀽 HTTP body锛屾敮鎸佸璞′笌 JSON 瀛楃涓层€?*/
@@ -240,9 +238,7 @@ function toBoundaryISO(input, endOfDay = false) {
   if (!input) return ''
 
   if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
-    return endOfDay
-      ? `${input}T23:59:59.999Z`
-      : `${input}T00:00:00.000Z`
+    return endOfDay ? `${input}T23:59:59.999Z` : `${input}T00:00:00.000Z`
   }
 
   const date = new Date(input)
@@ -302,7 +298,6 @@ async function safeRollback(transaction) {
   }
 }
 
-
 function chunkArray(values, size = 20) {
   const chunks = []
   const list = Array.isArray(values) ? values : []
@@ -328,10 +323,7 @@ async function fetchByFieldIn(collectionName, field, values, extraWhere = {}) {
       [field]: _.in(chunk)
     })
 
-    const res = await db.collection(collectionName)
-      .where(whereQuery)
-      .limit(100)
-      .get()
+    const res = await db.collection(collectionName).where(whereQuery).limit(100).get()
 
     result.push(...(res.data || []))
   }
@@ -393,7 +385,8 @@ function normalizePhotoList(value) {
       .map((item) => {
         if (!item) return ''
         if (typeof item === 'string') return item.trim()
-        if (typeof item === 'object') return String(item.url || item.fileID || item.path || '').trim()
+        if (typeof item === 'object')
+          return String(item.url || item.fileID || item.path || '').trim()
         return ''
       })
       .filter(Boolean)
@@ -445,7 +438,9 @@ function pickValue(source = {}, keys = []) {
 
 /** honor level 文本归一化为标准 id。 */
 function normalizeHonorLevel(level) {
-  const raw = String(level || '').trim().toLowerCase()
+  const raw = String(level || '')
+    .trim()
+    .toLowerCase()
   if (!raw) return ''
   if (HONOR_LEVEL_POINTS_MAP[raw]) return raw
 
@@ -600,7 +595,8 @@ async function getActivities(params = {}, openid) {
 
   const countRes = await db.collection('activities').where(matchQuery).count()
 
-  const activityRes = await db.collection('activities')
+  const activityRes = await db
+    .collection('activities')
     .where(matchQuery)
     .orderBy('createdAt', 'desc')
     .skip(skip)
@@ -614,14 +610,14 @@ async function getActivities(params = {}, openid) {
     const signupList = await fetchByFieldIn(
       'signups',
       'activityId',
-      activities.map(item => item._id),
+      activities.map((item) => item._id),
       { _openid: openid }
     )
 
-    signupActivitySet = new Set((signupList || []).map(item => item.activityId))
+    signupActivitySet = new Set((signupList || []).map((item) => item.activityId))
   }
 
-  const list = activities.map(item => ({
+  const list = activities.map((item) => ({
     ...item,
     isSignedUp: signupActivitySet.has(item._id)
   }))
@@ -713,7 +709,11 @@ async function signup(activityId, openid) {
   const transaction = await db.startTransaction()
 
   try {
-    const activityRes = await transaction.collection('activities').where({ _id: activityId }).limit(1).get()
+    const activityRes = await transaction
+      .collection('activities')
+      .where({ _id: activityId })
+      .limit(1)
+      .get()
     if (!activityRes.data || activityRes.data.length === 0) {
       await safeRollback(transaction)
       return { code: 404, message: '' }
@@ -733,10 +733,13 @@ async function signup(activityId, openid) {
       return { code: 400, message: '娲诲姩鍚嶉宸叉弧' }
     }
 
-    const existing = await transaction.collection('signups').where({
-      activityId,
-      _openid: openid
-    }).count()
+    const existing = await transaction
+      .collection('signups')
+      .where({
+        activityId,
+        _openid: openid
+      })
+      .count()
 
     if (existing.total > 0) {
       await safeRollback(transaction)
@@ -751,9 +754,12 @@ async function signup(activityId, openid) {
       }
     })
 
-    await transaction.collection('activities').doc(activityId).update({
-      data: { enrollCount: _.inc(1) }
-    })
+    await transaction
+      .collection('activities')
+      .doc(activityId)
+      .update({
+        data: { enrollCount: _.inc(1) }
+      })
 
     await transaction.commit()
     return { code: 0, message: '鎶ュ悕鎴愬姛' }
@@ -772,26 +778,35 @@ async function cancelSignup(activityId, openid) {
   const transaction = await db.startTransaction()
 
   try {
-    const signupCount = await transaction.collection('signups').where({
-      activityId,
-      _openid: openid
-    }).count()
+    const signupCount = await transaction
+      .collection('signups')
+      .where({
+        activityId,
+        _openid: openid
+      })
+      .count()
 
     if (signupCount.total === 0) {
       await safeRollback(transaction)
       return { code: 400, message: '' }
     }
 
-    const removeRes = await transaction.collection('signups').where({
-      activityId,
-      _openid: openid
-    }).remove()
+    const removeRes = await transaction
+      .collection('signups')
+      .where({
+        activityId,
+        _openid: openid
+      })
+      .remove()
 
     const removed = Number(removeRes.removed || signupCount.total || 0)
     if (removed > 0) {
-      await transaction.collection('activities').doc(activityId).update({
-        data: { enrollCount: _.inc(-removed) }
-      })
+      await transaction
+        .collection('activities')
+        .doc(activityId)
+        .update({
+          data: { enrollCount: _.inc(-removed) }
+        })
     }
 
     await transaction.commit()
@@ -814,18 +829,18 @@ async function getMySignups(openid) {
     return { code: 0, data: [] }
   }
 
-  const activityIds = signups.map(item => item.activityId).filter(Boolean)
+  const activityIds = signups.map((item) => item.activityId).filter(Boolean)
 
   const [activities, records] = await Promise.all([
     fetchByFieldIn('activities', '_id', activityIds),
     fetchByFieldIn('records', 'activityId', activityIds, { _openid: openid })
   ])
 
-  const activityMap = new Map((activities || []).map(item => [item._id, item]))
-  const checkedSet = new Set((records || []).map(item => item.activityId))
+  const activityMap = new Map((activities || []).map((item) => [item._id, item]))
+  const checkedSet = new Set((records || []).map((item) => item.activityId))
 
   const list = signups
-    .map(signup => {
+    .map((signup) => {
       const activity = activityMap.get(signup.activityId)
       if (!activity) return null
 
@@ -867,27 +882,37 @@ async function submitCheckin(data = {}, openid) {
   const transaction = await db.startTransaction()
 
   try {
-    const signupRes = await transaction.collection('signups').where({
-      activityId,
-      _openid: openid
-    }).count()
+    const signupRes = await transaction
+      .collection('signups')
+      .where({
+        activityId,
+        _openid: openid
+      })
+      .count()
 
     if (signupRes.total === 0) {
       await safeRollback(transaction)
       return { code: 403, message: '' }
     }
 
-    const existingRecordRes = await transaction.collection('records').where({
-      activityId,
-      _openid: openid
-    }).count()
+    const existingRecordRes = await transaction
+      .collection('records')
+      .where({
+        activityId,
+        _openid: openid
+      })
+      .count()
 
     if (existingRecordRes.total > 0) {
       await safeRollback(transaction)
       return { code: 400, message: '' }
     }
 
-    const activityRes = await transaction.collection('activities').where({ _id: activityId }).limit(1).get()
+    const activityRes = await transaction
+      .collection('activities')
+      .where({ _id: activityId })
+      .limit(1)
+      .get()
     if (!activityRes.data || activityRes.data.length === 0) {
       await safeRollback(transaction)
       return { code: 404, message: '' }
@@ -933,7 +958,8 @@ async function getMyRecords(params = {}, openid) {
   const { page, pageSize, skip } = normalizePagination(params.page, params.pageSize)
 
   const countRes = await db.collection('records').where({ _openid: openid }).count()
-  const listRes = await db.collection('records')
+  const listRes = await db
+    .collection('records')
     .where({ _openid: openid })
     .orderBy('checkedAt', 'desc')
     .skip(skip)
@@ -958,7 +984,8 @@ async function getStatistics(openid) {
     db.collection('honors').where({ _openid: openid }).count()
   ])
 
-  const statsRes = await db.collection('records')
+  const statsRes = await db
+    .collection('records')
     .aggregate()
     .match({
       _openid: openid,
@@ -972,7 +999,8 @@ async function getStatistics(openid) {
     })
     .end()
 
-  const byActivityRes = await db.collection('records')
+  const byActivityRes = await db
+    .collection('records')
     .aggregate()
     .match({
       _openid: openid,
@@ -986,7 +1014,8 @@ async function getStatistics(openid) {
     .sort({ totalHours: -1 })
     .end()
 
-  const byCategoryRes = await db.collection('records')
+  const byCategoryRes = await db
+    .collection('records')
     .aggregate()
     .match({
       _openid: openid,
@@ -1004,7 +1033,12 @@ async function getStatistics(openid) {
   const user = userRes.data && userRes.data.length > 0 ? userRes.data[0] : null
 
   const [checkinRecordsRes, honorRecordsRes] = await Promise.all([
-    db.collection('records').where({ _openid: openid }).orderBy('checkedAt', 'desc').limit(50).get(),
+    db
+      .collection('records')
+      .where({ _openid: openid })
+      .orderBy('checkedAt', 'desc')
+      .limit(50)
+      .get(),
     db.collection('honors').where({ _openid: openid }).orderBy('createdAt', 'desc').limit(50).get()
   ])
 
@@ -1019,12 +1053,12 @@ async function getStatistics(openid) {
       totalHonors: Number(honorCountRes.total || 0),
       checkinRecords: checkinRecordsRes.data || [],
       honorRecords: honorRecordsRes.data || [],
-      byCategory: (byCategoryRes.list || []).map(item => ({
+      byCategory: (byCategoryRes.list || []).map((item) => ({
         category: item._id || '未分类',
         count: Number(item.count || 0),
         totalHours: Number(item.totalHours || 0)
       })),
-      byActivity: (byActivityRes.list || []).map(item => ({
+      byActivity: (byActivityRes.list || []).map((item) => ({
         activityName: item._id || '鏈煡娲诲姩',
         personCount: Number(item.personCount || 0),
         totalHours: Number(item.totalHours || 0)
@@ -1053,7 +1087,7 @@ function buildReportRows(stats) {
   if (Array.isArray(stats.byActivity) && stats.byActivity.length > 0) {
     rows.push([])
     rows.push(['娲诲姩鍚嶇О', '鏈嶅姟浜烘暟', '鏈嶅姟鏃堕暱(灏忔椂)'])
-    stats.byActivity.forEach(item => {
+    stats.byActivity.forEach((item) => {
       rows.push([item.activityName, item.personCount, item.totalHours])
     })
   }
@@ -1078,9 +1112,7 @@ async function exportReport(_params = {}, openid) {
   }
 
   const rows = buildReportRows(statsRes.data)
-  const csvBody = rows
-    .map(row => row.map(escapeCsvCell).join(','))
-    .join('\n')
+  const csvBody = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')
 
   // UTF-8 BOM，确保 Excel 打开中文不乱码
   const csv = `\uFEFF${csvBody}`
@@ -1107,7 +1139,11 @@ async function findAdminByCredential(account, password) {
   const inputPassword = String(password || '').trim()
   if (!inputAccount || !inputPassword) return null
 
-  const res = await db.collection('users').where({ role: _.in([ROLE_ADMIN, ROLE_SUPER_ADMIN]) }).limit(100).get()
+  const res = await db
+    .collection('users')
+    .where({ role: _.in([ROLE_ADMIN, ROLE_SUPER_ADMIN]) })
+    .limit(100)
+    .get()
   const adminUsers = res.data || []
 
   for (const user of adminUsers) {
@@ -1118,16 +1154,11 @@ async function findAdminByCredential(account, password) {
       user.loginAccount,
       user.phone
     ]
-      .map(v => String(v == null ? '' : v).trim())
+      .map((v) => String(v == null ? '' : v).trim())
       .filter(Boolean)
 
-    const candidatePasswords = [
-      user.adminPassword,
-      user.password,
-      user.passwd,
-      user.loginPassword
-    ]
-      .map(v => String(v == null ? '' : v).trim())
+    const candidatePasswords = [user.adminPassword, user.password, user.passwd, user.loginPassword]
+      .map((v) => String(v == null ? '' : v).trim())
       .filter(Boolean)
 
     if (candidateAccounts.includes(inputAccount) && candidatePasswords.includes(inputPassword)) {
@@ -1135,7 +1166,9 @@ async function findAdminByCredential(account, password) {
     }
   }
 
-  console.warn(`[adminLogin] credential mismatch, account=${inputAccount}, adminCount=${adminUsers.length}`)
+  console.warn(
+    `[adminLogin] credential mismatch, account=${inputAccount}, adminCount=${adminUsers.length}`
+  )
   return null
 }
 
@@ -1146,15 +1179,18 @@ async function attachAdminSession(openid, account, adminUser) {
   const now = new Date()
   const expiresAt = new Date(now.getTime() + ADMIN_SESSION_TTL_MS)
 
-  await db.collection('users').doc(user._id).update({
-    data: {
-      adminSessionAccount: account,
-      adminSessionUserId: adminUser?._id || '',
-      adminSessionAt: now,
-      adminSessionExpiresAt: expiresAt,
-      updatedAt: db.serverDate()
-    }
-  })
+  await db
+    .collection('users')
+    .doc(user._id)
+    .update({
+      data: {
+        adminSessionAccount: account,
+        adminSessionUserId: adminUser?._id || '',
+        adminSessionAt: now,
+        adminSessionExpiresAt: expiresAt,
+        updatedAt: db.serverDate()
+      }
+    })
 
   const latest = await db.collection('users').doc(user._id).get()
   return latest.data || user
@@ -1180,11 +1216,11 @@ async function adminLogin(data = {}, openid) {
   const normalizedUser = normalizeUserData(credentialUser)
   const displayName = String(
     credentialUser.nickName ||
-    credentialUser.nickname ||
-    credentialUser.realName ||
-    credentialUser.adminAccount ||
-    credentialUser.account ||
-    account
+      credentialUser.nickname ||
+      credentialUser.realName ||
+      credentialUser.adminAccount ||
+      credentialUser.account ||
+      account
   ).trim()
   const userInfo = {
     ...normalizedUser,
@@ -1207,9 +1243,12 @@ async function adminLogin(data = {}, openid) {
 function normalizeUserData(user) {
   if (!user) return user
   const rawRole = normalizeRoleValue(user.role)
-  const role = rawRole === ROLE_SUPER_ADMIN
-    ? ROLE_SUPER_ADMIN
-    : (rawRole === ROLE_ADMIN || isAdminSessionActive(user) ? ROLE_ADMIN : ROLE_MEMBER)
+  const role =
+    rawRole === ROLE_SUPER_ADMIN
+      ? ROLE_SUPER_ADMIN
+      : rawRole === ROLE_ADMIN || isAdminSessionActive(user)
+        ? ROLE_ADMIN
+        : ROLE_MEMBER
   return {
     ...user,
     totalPoints: Number(user.totalPoints || 0),
@@ -1343,7 +1382,8 @@ async function getUserProfile(openid) {
 
   if (needMigrateScoreFields) {
     const [volunteerAgg, honorAgg] = await Promise.all([
-      db.collection('records')
+      db
+        .collection('records')
         .aggregate()
         .match({ _openid: openid, status: 'approved' })
         .group({
@@ -1351,7 +1391,8 @@ async function getUserProfile(openid) {
           volunteerPoints: $.sum('$declaredPoints')
         })
         .end(),
-      db.collection('honors')
+      db
+        .collection('honors')
         .aggregate()
         .match({ _openid: openid, status: 'approved' })
         .group({
@@ -1365,14 +1406,17 @@ async function getUserProfile(openid) {
     const honorPoints = Number(honorAgg.list[0]?.honorPoints || 0)
     const totalPoints = volunteerPoints + honorPoints
 
-    await db.collection('users').doc(user._id).update({
-      data: {
-        volunteerPoints,
-        honorPoints,
-        totalPoints,
-        updatedAt: db.serverDate()
-      }
-    })
+    await db
+      .collection('users')
+      .doc(user._id)
+      .update({
+        data: {
+          volunteerPoints,
+          honorPoints,
+          totalPoints,
+          updatedAt: db.serverDate()
+        }
+      })
 
     user = await getUserByOpenid(openid)
     normalizedUser = normalizeUserData(user)
@@ -1428,7 +1472,10 @@ async function submitVolunteerDeclaration(data = {}, openid) {
   const record = {
     activityId: String(data.activityId || `manual-${Date.now()}`),
     activityName: payload.title,
-    activityCategory: resolveVolunteerCategory(payload.moduleId, String(data.activityCategory || '').trim()),
+    activityCategory: resolveVolunteerCategory(
+      payload.moduleId,
+      String(data.activityCategory || '').trim()
+    ),
     activityLocation: payload.location,
     declaredPoints: payload.declaredPoints,
     photos: payload.photos,
@@ -1481,21 +1528,21 @@ async function getVolunteerRecords(params = {}, openid) {
   let rawList = []
   let total = 0
   if (moduleId) {
-    const allList = await fetchAllByWhere(
-      'records',
-      whereQuery,
-      { orderByField: 'checkedAt', orderDirection: 'desc', pageSize: 100 }
-    )
-    const filteredList = allList.filter((item) =>
-      item.moduleId === moduleId ||
-      item.activityCategory === moduleId
+    const allList = await fetchAllByWhere('records', whereQuery, {
+      orderByField: 'checkedAt',
+      orderDirection: 'desc',
+      pageSize: 100
+    })
+    const filteredList = allList.filter(
+      (item) => item.moduleId === moduleId || item.activityCategory === moduleId
     )
     total = filteredList.length
     rawList = filteredList.slice(skip, skip + pageSize)
   } else {
     const [countRes, listRes] = await Promise.all([
       db.collection('records').where(whereQuery).count(),
-      db.collection('records')
+      db
+        .collection('records')
         .where(whereQuery)
         .orderBy('checkedAt', 'desc')
         .skip(skip)
@@ -1565,7 +1612,8 @@ async function getHonorRecords(params = {}, openid) {
 
   const [countRes, listRes] = await Promise.all([
     db.collection('honors').where(whereQuery).count(),
-    db.collection('honors')
+    db
+      .collection('honors')
       .where(whereQuery)
       .orderBy('createdAt', 'desc')
       .skip(skip)
@@ -1577,12 +1625,13 @@ async function getHonorRecords(params = {}, openid) {
     const statusMeta = resolveStatusMeta(item.status || 'pending')
     const honorPoints = Number(item.honorPoints || 0)
     const levelId = normalizeHonorLevel(item.honorLevel)
-    const categoryName = {
-      national: '国家级荣誉',
-      provincial: '省部级荣誉',
-      bureau: '厅局级荣誉',
-      factory: '厂处级荣誉'
-    }[levelId] || '荣誉获奖'
+    const categoryName =
+      {
+        national: '国家级荣誉',
+        provincial: '省部级荣誉',
+        bureau: '厅局级荣誉',
+        factory: '厂处级荣誉'
+      }[levelId] || '荣誉获奖'
     return {
       id: item._id,
       type: 'honor',
@@ -1646,9 +1695,12 @@ async function adminImport(data = {}, openid) {
       const location = String(pickValue(row, ['location', 'activityLocation', '地点'])).trim()
       const content = String(pickValue(row, ['content', 'remark', '参与内容'])).trim()
       const points = Number(pickValue(row, ['points', 'declaredPoints', '积分']))
-      const checkedAt = parseDateOrNull(pickValue(row, ['activityTime', 'checkedAt', 'time', '时间'])) || new Date()
+      const checkedAt =
+        parseDateOrNull(pickValue(row, ['activityTime', 'checkedAt', 'time', '时间'])) || new Date()
       const photos = normalizePhotoList(pickValue(row, ['photos', 'proofs', '佐证材料链接']))
-      const targetOpenid = String(pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])).trim()
+      const targetOpenid = String(
+        pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
+      ).trim()
 
       if (!title || !location || !content || !Number.isFinite(points) || points <= 0) {
         failed.push({ type: 'volunteer', row, reason: '志愿记录字段不完整' })
@@ -1656,9 +1708,15 @@ async function adminImport(data = {}, openid) {
       }
 
       const record = {
-        activityId: String(pickValue(row, ['activityId']) || `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+        activityId: String(
+          pickValue(row, ['activityId']) ||
+            `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        ),
         activityName: title,
-        activityCategory: resolveVolunteerCategory(moduleId, String(pickValue(row, ['activityCategory'])).trim()),
+        activityCategory: resolveVolunteerCategory(
+          moduleId,
+          String(pickValue(row, ['activityCategory'])).trim()
+        ),
         activityLocation: location,
         declaredPoints: points,
         photos,
@@ -1682,13 +1740,16 @@ async function adminImport(data = {}, openid) {
         const targetUser = await ensureUser(targetOpenid)
         const nextPoints = Number(targetUser.totalPoints || 0) + points
         const nextCheckinCount = Number(targetUser.checkinCount || 0) + 1
-        await db.collection('users').doc(targetUser._id).update({
-          data: {
-            totalPoints: nextPoints,
-            checkinCount: nextCheckinCount,
-            updatedAt: db.serverDate()
-          }
-        })
+        await db
+          .collection('users')
+          .doc(targetUser._id)
+          .update({
+            data: {
+              totalPoints: nextPoints,
+              checkinCount: nextCheckinCount,
+              updatedAt: db.serverDate()
+            }
+          })
         await db.collection('points_logs').add({
           data: {
             userId: targetUser._id,
@@ -1712,14 +1773,22 @@ async function adminImport(data = {}, openid) {
     try {
       const levelId = normalizeHonorLevel(pickValue(row, ['levelId', 'honorLevel', '荣誉级别']))
       const honorPointsRaw = Number(pickValue(row, ['honorPoints', 'points', '积分']))
-      const honorPoints = Number.isFinite(honorPointsRaw) && honorPointsRaw > 0
-        ? honorPointsRaw
-        : Number(HONOR_LEVEL_POINTS_MAP[levelId] || 0)
-      const honorTitle = String(pickValue(row, ['title', 'honorTitle', 'honorName', '荣誉名称'])).trim()
-      const awardTime = parseDateOrNull(pickValue(row, ['time', 'awardTime', '获取时间'])) || new Date()
-      const awardOrganization = String(pickValue(row, ['organization', 'awardOrganization', '授奖单位'])).trim()
+      const honorPoints =
+        Number.isFinite(honorPointsRaw) && honorPointsRaw > 0
+          ? honorPointsRaw
+          : Number(HONOR_LEVEL_POINTS_MAP[levelId] || 0)
+      const honorTitle = String(
+        pickValue(row, ['title', 'honorTitle', 'honorName', '荣誉名称'])
+      ).trim()
+      const awardTime =
+        parseDateOrNull(pickValue(row, ['time', 'awardTime', '获取时间'])) || new Date()
+      const awardOrganization = String(
+        pickValue(row, ['organization', 'awardOrganization', '授奖单位'])
+      ).trim()
       const proofs = normalizePhotoList(pickValue(row, ['proofs', 'files', '佐证材料链接']))
-      const targetOpenid = String(pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])).trim()
+      const targetOpenid = String(
+        pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
+      ).trim()
 
       if (!levelId || !Number.isFinite(honorPoints) || honorPoints <= 0) {
         failed.push({ type: 'honor', row, reason: '荣誉级别或积分不合法' })
@@ -1733,7 +1802,9 @@ async function adminImport(data = {}, openid) {
 
       const record = {
         userId: targetUser?._id || '',
-        userName: targetUser?.realName || String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim(),
+        userName:
+          targetUser?.realName ||
+          String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim(),
         phone: targetUser?.phone || String(pickValue(row, ['phone', '手机号'])).trim(),
         honorLevel: levelId,
         honorPoints,
@@ -1755,12 +1826,15 @@ async function adminImport(data = {}, openid) {
 
       if (targetUser && targetOpenid) {
         const nextPoints = Number(targetUser.totalPoints || 0) + honorPoints
-        await db.collection('users').doc(targetUser._id).update({
-          data: {
-            totalPoints: nextPoints,
-            updatedAt: db.serverDate()
-          }
-        })
+        await db
+          .collection('users')
+          .doc(targetUser._id)
+          .update({
+            data: {
+              totalPoints: nextPoints,
+              updatedAt: db.serverDate()
+            }
+          })
         await db.collection('points_logs').add({
           data: {
             userId: targetUser._id,
@@ -1843,7 +1917,8 @@ async function adminAuditList(params = {}, openid) {
   if (!hasAdvancedFilter && type === 'volunteer') {
     const [countRes, listRes] = await Promise.all([
       db.collection('records').where(whereStatus).count(),
-      db.collection('records')
+      db
+        .collection('records')
         .where(whereStatus)
         .orderBy('checkedAt', 'desc')
         .skip(skip)
@@ -1897,7 +1972,8 @@ async function adminAuditList(params = {}, openid) {
   if (!hasAdvancedFilter && type === 'honor') {
     const [countRes, listRes] = await Promise.all([
       db.collection('honors').where(whereStatus).count(),
-      db.collection('honors')
+      db
+        .collection('honors')
         .where(whereStatus)
         .orderBy('createdAt', 'desc')
         .skip(skip)
@@ -1913,12 +1989,13 @@ async function adminAuditList(params = {}, openid) {
     const list = honors.map((item) => {
       const user = userMap.get(item.userId)
       const levelId = normalizeHonorLevel(item.honorLevel)
-      const levelLabel = {
-        national: '国家级荣誉',
-        provincial: '省部级荣誉',
-        bureau: '厅局级荣誉',
-        factory: '厂处级荣誉'
-      }[levelId] || '荣誉获奖'
+      const levelLabel =
+        {
+          national: '国家级荣誉',
+          provincial: '省部级荣誉',
+          bureau: '厅局级荣誉',
+          factory: '厂处级荣誉'
+        }[levelId] || '荣誉获奖'
       const statusMeta = resolveStatusMeta(item.status || 'pending')
       const honorPoints = Number(item.honorPoints || 0)
 
@@ -1958,11 +2035,11 @@ async function adminAuditList(params = {}, openid) {
   let honorItems = []
 
   if (includeVolunteer) {
-    const records = await fetchAllByWhere(
-      'records',
-      whereStatus,
-      { orderByField: 'checkedAt', orderDirection: 'desc', pageSize: 100 }
-    )
+    const records = await fetchAllByWhere('records', whereStatus, {
+      orderByField: 'checkedAt',
+      orderDirection: 'desc',
+      pageSize: 100
+    })
     const openids = Array.from(new Set(records.map((item) => item._openid).filter(Boolean)))
     const users = await fetchByFieldIn('users', '_openid', openids)
     const userMap = new Map((users || []).map((item) => [item._openid, item]))
@@ -1995,11 +2072,11 @@ async function adminAuditList(params = {}, openid) {
   }
 
   if (includeHonor) {
-    const honors = await fetchAllByWhere(
-      'honors',
-      whereStatus,
-      { orderByField: 'createdAt', orderDirection: 'desc', pageSize: 100 }
-    )
+    const honors = await fetchAllByWhere('honors', whereStatus, {
+      orderByField: 'createdAt',
+      orderDirection: 'desc',
+      pageSize: 100
+    })
     const userIds = Array.from(new Set(honors.map((item) => item.userId).filter(Boolean)))
     const users = await fetchByFieldIn('users', '_id', userIds)
     const userMap = new Map((users || []).map((item) => [item._id, item]))
@@ -2007,12 +2084,13 @@ async function adminAuditList(params = {}, openid) {
     honorItems = honors.map((item) => {
       const user = userMap.get(item.userId)
       const levelId = normalizeHonorLevel(item.honorLevel)
-      const levelLabel = {
-        national: '国家级荣誉',
-        provincial: '省部级荣誉',
-        bureau: '厅局级荣誉',
-        factory: '厂处级荣誉'
-      }[levelId] || '荣誉获奖'
+      const levelLabel =
+        {
+          national: '国家级荣誉',
+          provincial: '省部级荣誉',
+          bureau: '厅局级荣誉',
+          factory: '厂处级荣誉'
+        }[levelId] || '荣誉获奖'
       const statusMeta = resolveStatusMeta(item.status || 'pending')
       const honorPoints = Number(item.honorPoints || 0)
 
@@ -2040,21 +2118,21 @@ async function adminAuditList(params = {}, openid) {
 
   let allItems = [...volunteerItems, ...honorItems]
   if (keyword) {
-    allItems = allItems.filter((item) =>
-      item.title.includes(keyword) ||
-      item.applicantName.includes(keyword) ||
-      item.categoryName.includes(keyword) ||
-      item.location.includes(keyword) ||
-      item.organization.includes(keyword)
+    allItems = allItems.filter(
+      (item) =>
+        item.title.includes(keyword) ||
+        item.applicantName.includes(keyword) ||
+        item.categoryName.includes(keyword) ||
+        item.location.includes(keyword) ||
+        item.organization.includes(keyword)
     )
   }
   if (year) {
     allItems = allItems.filter((item) => String(item.submitTime || '').startsWith(year))
   }
   if (moduleKeyword) {
-    allItems = allItems.filter((item) =>
-      item.title.includes(moduleKeyword) ||
-      item.categoryName.includes(moduleKeyword)
+    allItems = allItems.filter(
+      (item) => item.title.includes(moduleKeyword) || item.categoryName.includes(moduleKeyword)
     )
   }
 
@@ -2083,20 +2161,36 @@ async function adminDashboardSummary(_params = {}, openid) {
   const adminError = await ensureAdmin(openid)
   if (adminError) return adminError
 
-  const [pendingVolunteerRes, pendingHonorRes, approvedVolunteerRes, approvedHonorRes, rejectedVolunteerRes, rejectedHonorRes, volunteerListRes, honorListRes] = await Promise.all([
+  const [
+    pendingVolunteerRes,
+    pendingHonorRes,
+    approvedVolunteerRes,
+    approvedHonorRes,
+    rejectedVolunteerRes,
+    rejectedHonorRes,
+    volunteerListRes,
+    honorListRes
+  ] = await Promise.all([
     db.collection('records').where({ status: 'pending' }).count(),
     db.collection('honors').where({ status: 'pending' }).count(),
     db.collection('records').where({ status: 'approved' }).count(),
     db.collection('honors').where({ status: 'approved' }).count(),
     db.collection('records').where({ status: 'rejected' }).count(),
     db.collection('honors').where({ status: 'rejected' }).count(),
-    db.collection('records').where({ status: 'pending' }).orderBy('checkedAt', 'desc').limit(5).get(),
+    db
+      .collection('records')
+      .where({ status: 'pending' })
+      .orderBy('checkedAt', 'desc')
+      .limit(5)
+      .get(),
     db.collection('honors').where({ status: 'pending' }).orderBy('createdAt', 'desc').limit(5).get()
   ])
 
   const volunteerRecords = volunteerListRes.data || []
   const honorRecords = honorListRes.data || []
-  const volunteerOpenids = Array.from(new Set(volunteerRecords.map((item) => item._openid).filter(Boolean)))
+  const volunteerOpenids = Array.from(
+    new Set(volunteerRecords.map((item) => item._openid).filter(Boolean))
+  )
   const honorUserIds = Array.from(new Set(honorRecords.map((item) => item.userId).filter(Boolean)))
 
   const [volunteerUsers, honorUsers] = await Promise.all([
@@ -2146,7 +2240,8 @@ async function adminDashboardSummary(_params = {}, openid) {
       summary: {
         pendingVolunteerCount: Number(pendingVolunteerRes.total || 0),
         pendingHonorCount: Number(pendingHonorRes.total || 0),
-        approvedCount: Number(approvedVolunteerRes.total || 0) + Number(approvedHonorRes.total || 0),
+        approvedCount:
+          Number(approvedVolunteerRes.total || 0) + Number(approvedHonorRes.total || 0),
         rejectedCount: Number(rejectedVolunteerRes.total || 0) + Number(rejectedHonorRes.total || 0)
       },
       logs: latestLogs
@@ -2161,11 +2256,14 @@ async function adminAuditOperate(data = {}, openid) {
 
   const type = String(data.type || '').trim()
   const id = String(data.id || '').trim()
-  const ids = Array.isArray(data.ids) ? data.ids.map((item) => String(item || '').trim()).filter(Boolean) : []
+  const ids = Array.isArray(data.ids)
+    ? data.ids.map((item) => String(item || '').trim()).filter(Boolean)
+    : []
   const targetIds = ids.length > 0 ? ids : id ? [id] : []
   const status = String(data.status || '').trim()
   const action = String(data.action || '').trim()
-  const pass = typeof data.pass === 'boolean' ? data.pass : status === 'approved' || action === 'approve'
+  const pass =
+    typeof data.pass === 'boolean' ? data.pass : status === 'approved' || action === 'approve'
   const rejectReason = String(data.rejectReason || '').trim()
 
   if (targetIds.length === 0) {
@@ -2263,9 +2361,7 @@ async function adminExport(params = {}, openid) {
     return auditListRes
   }
 
-  const rows = [
-    ['类型', '标题', '申请人', '分类', '提交时间', '申报积分', '审核状态', '驳回原因']
-  ]
+  const rows = [['类型', '标题', '申请人', '分类', '提交时间', '申报积分', '审核状态', '驳回原因']]
 
   ;(auditListRes.data.list || []).forEach((item) => {
     rows.push([
@@ -2301,9 +2397,10 @@ async function adminExport(params = {}, openid) {
 async function submitHonor(data = {}, openid) {
   const honorLevel = normalizeHonorLevel(data.levelId || data.honorLevel)
   const honorPointsInput = Number(data.honorPoints || data.points)
-  const honorPoints = Number.isFinite(honorPointsInput) && honorPointsInput > 0
-    ? honorPointsInput
-    : Number(HONOR_LEVEL_POINTS_MAP[honorLevel] || 0)
+  const honorPoints =
+    Number.isFinite(honorPointsInput) && honorPointsInput > 0
+      ? honorPointsInput
+      : Number(HONOR_LEVEL_POINTS_MAP[honorLevel] || 0)
   const proofs = normalizePhotoList(data.proofs || data.files)
   const userId = String(data.userId || '').trim()
   const honorTitle = String(data.honorTitle || data.title || data.honorName || '').trim()
@@ -2314,7 +2411,10 @@ async function submitHonor(data = {}, openid) {
     return { code: 400, message: '荣誉信息不完整' }
   }
 
-  if ((honorTitle || awardOrganization || awardTime || data.time || data.title) && (!honorTitle || !awardOrganization || !awardTime || proofs.length === 0)) {
+  if (
+    (honorTitle || awardOrganization || awardTime || data.time || data.title) &&
+    (!honorTitle || !awardOrganization || !awardTime || proofs.length === 0)
+  ) {
     return { code: 400, message: '请完整填写荣誉申报信息并上传佐证材料' }
   }
 
@@ -2371,10 +2471,7 @@ async function adminGetUsers(params = {}, openid) {
   }
 
   const countRes = await query.count()
-  const listRes = await query
-    .skip(skip)
-    .limit(pageSize)
-    .get()
+  const listRes = await query.skip(skip).limit(pageSize).get()
 
   const list = (listRes.data || []).map(normalizeUserData)
 
@@ -2502,21 +2599,24 @@ async function adminDisableUser(data = {}, openid) {
     }
   }
 
-  await db.collection('users').doc(targetUser._id).update({
-    data: {
-      isDeleted: true,
-      status: 'disabled',
-      deleteReason: reason,
-      deletedAt: db.serverDate(),
-      deletedBy: operator._id,
-      role: ROLE_MEMBER,
-      adminSessionAccount: '',
-      adminSessionUserId: '',
-      adminSessionAt: null,
-      adminSessionExpiresAt: null,
-      updatedAt: db.serverDate()
-    }
-  })
+  await db
+    .collection('users')
+    .doc(targetUser._id)
+    .update({
+      data: {
+        isDeleted: true,
+        status: 'disabled',
+        deleteReason: reason,
+        deletedAt: db.serverDate(),
+        deletedBy: operator._id,
+        role: ROLE_MEMBER,
+        adminSessionAccount: '',
+        adminSessionUserId: '',
+        adminSessionAt: null,
+        adminSessionExpiresAt: null,
+        updatedAt: db.serverDate()
+      }
+    })
 
   const latestRes = await db.collection('users').doc(targetUser._id).get()
   return {
@@ -2550,7 +2650,8 @@ async function getPointsLogs(params = {}, openid) {
   const userId = String(params.userId || '').trim()
   if (!userId) return { code: 400, message: '缂哄皯鐢ㄦ埛 ID' }
 
-  const res = await db.collection('points_logs')
+  const res = await db
+    .collection('points_logs')
     .where({ userId })
     .orderBy('createdAt', 'desc')
     .limit(200)
@@ -2568,7 +2669,8 @@ async function adjustUserPoints(data = {}, openid) {
   const reason = String(data.reason || '').trim()
 
   if (!targetUserId) return { code: 400, message: '缂哄皯鐩爣鐢ㄦ埛' }
-  if (!Number.isFinite(amount) || amount === 0) return { code: 400, message: '璋冩暣鏁板€间笉鍚堟硶' }
+  if (!Number.isFinite(amount) || amount === 0)
+    return { code: 400, message: '璋冩暣鏁板€间笉鍚堟硶' }
   if (!reason) return { code: 400, message: '蹇呴』濉啓璋冩暣鍘熷洜' }
 
   const transaction = await db.startTransaction()
@@ -2587,12 +2689,15 @@ async function adjustUserPoints(data = {}, openid) {
       return { code: 400, message: '鎵ｅ噺鍚庣Н鍒嗕笉鍙负璐熸暟' }
     }
 
-    await transaction.collection('users').doc(targetUserId).update({
-      data: {
-        totalPoints: nextPoints,
-        updatedAt: db.serverDate()
-      }
-    })
+    await transaction
+      .collection('users')
+      .doc(targetUserId)
+      .update({
+        data: {
+          totalPoints: nextPoints,
+          updatedAt: db.serverDate()
+        }
+      })
 
     await transaction.collection('points_logs').add({
       data: {
@@ -2625,7 +2730,8 @@ async function adminGetCheckins(params = {}, openid) {
   const whereQuery = status ? { status } : {}
 
   const countRes = await db.collection('records').where(whereQuery).count()
-  const listRes = await db.collection('records')
+  const listRes = await db
+    .collection('records')
     .where(whereQuery)
     .orderBy('checkedAt', 'desc')
     .skip(skip)
@@ -2633,11 +2739,11 @@ async function adminGetCheckins(params = {}, openid) {
     .get()
 
   const records = listRes.data || []
-  const userOpenids = records.map(item => item._openid).filter(Boolean)
+  const userOpenids = records.map((item) => item._openid).filter(Boolean)
   const users = await fetchByFieldIn('users', '_openid', userOpenids)
-  const userMap = new Map((users || []).map(item => [item._openid, item]))
+  const userMap = new Map((users || []).map((item) => [item._openid, item]))
 
-  const list = records.map(record => {
+  const list = records.map((record) => {
     const user = userMap.get(record._openid)
     return {
       ...record,
@@ -2685,9 +2791,10 @@ async function auditCheckin(data = {}, openid) {
 
     if (pass) {
       const rawDeclaredPoints = Number(record.declaredPoints || 0)
-      const declaredPoints = Number.isFinite(approvedPointsInput) && approvedPointsInput > 0
-        ? approvedPointsInput
-        : rawDeclaredPoints
+      const declaredPoints =
+        Number.isFinite(approvedPointsInput) && approvedPointsInput > 0
+          ? approvedPointsInput
+          : rawDeclaredPoints
 
       if (!Number.isFinite(declaredPoints) || declaredPoints <= 0) {
         await safeRollback(transaction)
@@ -2702,7 +2809,11 @@ async function auditCheckin(data = {}, openid) {
         }
       }
 
-      const userRes = await transaction.collection('users').where({ _openid: record._openid }).limit(1).get()
+      const userRes = await transaction
+        .collection('users')
+        .where({ _openid: record._openid })
+        .limit(1)
+        .get()
       let user = userRes.data && userRes.data.length > 0 ? userRes.data[0] : null
 
       if (!user) {
@@ -2730,25 +2841,31 @@ async function auditCheckin(data = {}, openid) {
       const nextVolunteerPoints = currentVolunteerPoints + declaredPoints
       const nextCheckinCount = Number(user?.checkinCount || 0) + 1
 
-      await transaction.collection('users').doc(user._id).update({
-        data: {
-          totalPoints: nextPoints,
-          volunteerPoints: nextVolunteerPoints,
-          checkinCount: nextCheckinCount,
-          updatedAt: db.serverDate()
-        }
-      })
+      await transaction
+        .collection('users')
+        .doc(user._id)
+        .update({
+          data: {
+            totalPoints: nextPoints,
+            volunteerPoints: nextVolunteerPoints,
+            checkinCount: nextCheckinCount,
+            updatedAt: db.serverDate()
+          }
+        })
 
-      await transaction.collection('records').doc(recordId).update({
-        data: {
-          status: 'approved',
-          declaredPoints,
-          auditedAt: db.serverDate(),
-          auditorOpenid: openid,
-          updatedAt: db.serverDate(),
-          rejectReason: ''
-        }
-      })
+      await transaction
+        .collection('records')
+        .doc(recordId)
+        .update({
+          data: {
+            status: 'approved',
+            declaredPoints,
+            auditedAt: db.serverDate(),
+            auditorOpenid: openid,
+            updatedAt: db.serverDate(),
+            rejectReason: ''
+          }
+        })
 
       await transaction.collection('points_logs').add({
         data: {
@@ -2769,15 +2886,18 @@ async function auditCheckin(data = {}, openid) {
         return { code: 400, message: '蹇呴』濉啓椹冲洖鍘熷洜' }
       }
 
-      await transaction.collection('records').doc(recordId).update({
-        data: {
-          status: 'rejected',
-          rejectReason,
-          auditedAt: db.serverDate(),
-          auditorOpenid: openid,
-          updatedAt: db.serverDate()
-        }
-      })
+      await transaction
+        .collection('records')
+        .doc(recordId)
+        .update({
+          data: {
+            status: 'rejected',
+            rejectReason,
+            auditedAt: db.serverDate(),
+            auditorOpenid: openid,
+            updatedAt: db.serverDate()
+          }
+        })
     }
 
     await transaction.commit()
@@ -2796,19 +2916,17 @@ async function adminGetStats(_params = {}, openid) {
   const usersCount = await db.collection('users').count()
   const checkinsCount = await db.collection('records').count()
 
-  const pointsAgg = await db.collection('users')
+  const pointsAgg = await db
+    .collection('users')
     .aggregate()
     .group({ _id: null, totalPointsIssued: $.sum('$totalPoints') })
     .end()
 
   const totalPointsIssued = pointsAgg.list[0]?.totalPointsIssued || 0
 
-  const topRes = await db.collection('users')
-    .orderBy('totalPoints', 'desc')
-    .limit(5)
-    .get()
+  const topRes = await db.collection('users').orderBy('totalPoints', 'desc').limit(5).get()
 
-  const topUsers = (topRes.data || []).map(item => ({
+  const topUsers = (topRes.data || []).map((item) => ({
     realName: item.realName || '未命名',
     totalPoints: Number(item.totalPoints || 0)
   }))
@@ -2833,7 +2951,8 @@ async function adminGetHonors(params = {}, openid) {
   const whereQuery = status ? { status } : {}
 
   const countRes = await db.collection('honors').where(whereQuery).count()
-  const listRes = await db.collection('honors')
+  const listRes = await db
+    .collection('honors')
     .where(whereQuery)
     .orderBy('createdAt', 'desc')
     .skip(skip)
@@ -2841,11 +2960,11 @@ async function adminGetHonors(params = {}, openid) {
     .get()
 
   const honors = listRes.data || []
-  const userIds = honors.map(item => item.userId).filter(Boolean)
+  const userIds = honors.map((item) => item.userId).filter(Boolean)
   const users = await fetchByFieldIn('users', '_id', userIds)
-  const userMap = new Map((users || []).map(item => [item._id, item]))
+  const userMap = new Map((users || []).map((item) => [item._id, item]))
 
-  const list = honors.map(item => {
+  const list = honors.map((item) => {
     const user = userMap.get(item.userId)
     return {
       ...item,
@@ -2896,9 +3015,10 @@ async function adminAuditHonor(data = {}, openid) {
     if (pass) {
       const honorLevel = levelIdInput || normalizeHonorLevel(honor.honorLevel)
       const fallbackPoints = Number(HONOR_LEVEL_POINTS_MAP[honorLevel] || 0)
-      const honorPoints = Number.isFinite(approvedPointsInput) && approvedPointsInput > 0
-        ? approvedPointsInput
-        : Number(honor.honorPoints || fallbackPoints)
+      const honorPoints =
+        Number.isFinite(approvedPointsInput) && approvedPointsInput > 0
+          ? approvedPointsInput
+          : Number(honor.honorPoints || fallbackPoints)
 
       if (!honorLevel || !Number.isFinite(honorPoints) || honorPoints <= 0) {
         await safeRollback(transaction)
@@ -2915,7 +3035,11 @@ async function adminAuditHonor(data = {}, openid) {
         }
       }
       if (!user && honor._openid) {
-        const userRes = await transaction.collection('users').where({ _openid: honor._openid }).limit(1).get()
+        const userRes = await transaction
+          .collection('users')
+          .where({ _openid: honor._openid })
+          .limit(1)
+          .get()
         user = userRes.data && userRes.data.length > 0 ? userRes.data[0] : null
       }
       if (!user) {
@@ -2928,25 +3052,31 @@ async function adminAuditHonor(data = {}, openid) {
       const nextPoints = currentPoints + honorPoints
       const nextHonorPoints = currentHonorPoints + honorPoints
 
-      await transaction.collection('users').doc(user._id).update({
-        data: {
-          totalPoints: nextPoints,
-          honorPoints: nextHonorPoints,
-          updatedAt: db.serverDate()
-        }
-      })
+      await transaction
+        .collection('users')
+        .doc(user._id)
+        .update({
+          data: {
+            totalPoints: nextPoints,
+            honorPoints: nextHonorPoints,
+            updatedAt: db.serverDate()
+          }
+        })
 
-      await transaction.collection('honors').doc(honorId).update({
-        data: {
-          status: 'approved',
-          honorLevel,
-          honorPoints,
-          auditedAt: db.serverDate(),
-          auditorOpenid: openid,
-          updatedAt: db.serverDate(),
-          rejectReason: ''
-        }
-      })
+      await transaction
+        .collection('honors')
+        .doc(honorId)
+        .update({
+          data: {
+            status: 'approved',
+            honorLevel,
+            honorPoints,
+            auditedAt: db.serverDate(),
+            auditorOpenid: openid,
+            updatedAt: db.serverDate(),
+            rejectReason: ''
+          }
+        })
 
       await transaction.collection('points_logs').add({
         data: {
@@ -2967,15 +3097,18 @@ async function adminAuditHonor(data = {}, openid) {
         return { code: 400, message: '蹇呴』濉啓椹冲洖鍘熷洜' }
       }
 
-      await transaction.collection('honors').doc(honorId).update({
-        data: {
-          status: 'rejected',
-          rejectReason,
-          auditedAt: db.serverDate(),
-          auditorOpenid: openid,
-          updatedAt: db.serverDate()
-        }
-      })
+      await transaction
+        .collection('honors')
+        .doc(honorId)
+        .update({
+          data: {
+            status: 'rejected',
+            rejectReason,
+            auditedAt: db.serverDate(),
+            auditorOpenid: openid,
+            updatedAt: db.serverDate()
+          }
+        })
     }
 
     await transaction.commit()
@@ -2986,5 +3119,3 @@ async function adminAuditHonor(data = {}, openid) {
     return { code: 500, message: '瀹℃牳澶辫触锛岃绋嶅悗閲嶈瘯' }
   }
 }
-
-

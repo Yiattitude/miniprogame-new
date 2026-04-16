@@ -13,4 +13,3 @@ import HonorApply from '@/components/HonorApply.vue'
   min-height: 100%;
 }
 </style>
-

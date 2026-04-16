@@ -1,13 +1,26 @@
 <template>
-  <view class="page page-with-nav">
-    <u-tabs :list="tabs" :current="current" @change="onTabChange" />
-
-    <view class="toolbar-card">
-      <text class="toolbar-text">当前列表 {{ filtered.length }} 条</text>
-      <text class="toolbar-text" v-if="isPendingTab">已选 {{ selectedIds.length }} 条</text>
+  <view class="page page-with-nav page-shell page-shell--admin">
+    <view class="page-hero page-hero--admin">
+      <view class="hero-badge">
+        <uni-icons type="checkbox-filled" size="16" color="#ffffff" />
+        <text>数据审核</text>
+      </view>
+      <text class="hero-title">待审核数据集中处理，支持单条与批量操作</text>
+      <text class="hero-subtitle"
+        >按页签查看志愿服务、荣誉获奖和历史处理记录，提高审核效率与准确性。</text
+      >
     </view>
 
-    <view v-if="isPendingTab" class="batch-actions">
+    <view class="themed-card tabs-shell">
+      <u-tabs :list="tabs" :current="current" @change="onTabChange" />
+    </view>
+
+    <view class="toolbar-shell">
+      <text class="toolbar-shell__text">当前列表 {{ filtered.length }} 条</text>
+      <text v-if="isPendingTab" class="toolbar-shell__text">已选 {{ selectedIds.length }} 条</text>
+    </view>
+
+    <view v-if="isPendingTab" class="action-group">
       <u-button type="info" plain :text="selectAllText" @click="toggleSelectAll" />
       <u-button
         type="primary"
@@ -23,20 +36,20 @@
       />
     </view>
 
-    <view v-if="filtered.length > 0" class="audit-list">
-      <view v-for="item in filtered" :key="item.id" class="audit-card">
-        <view class="audit-main" @click="openDetail(item)">
-          <view class="audit-head">
-            <view class="audit-title-group">
-              <text class="audit-title">{{ item.title }}</text>
-              <text class="audit-meta">{{ item.applicantName }} · {{ item.categoryName }}</text>
-            </view>
+    <view v-if="filtered.length > 0" class="simple-list">
+      <view v-for="item in filtered" :key="item.id" class="list-row-card audit-card-pro">
+        <view class="list-row-card__body" @click="openDetail(item)">
+          <view class="audit-card-pro__head">
+            <text class="list-row-card__title">{{ item.title }}</text>
             <u-tag :text="item.statusText" size="mini" :type="item.tagType" />
           </view>
-          <text class="audit-desc">{{ item.desc }}</text>
+          <text class="list-row-card__desc"
+            >{{ item.applicantName }} · {{ item.categoryName }}</text
+          >
+          <text class="list-row-card__desc">{{ item.desc }}</text>
         </view>
 
-        <view v-if="isPendingTab" class="audit-actions">
+        <view v-if="isPendingTab" class="audit-card-pro__actions">
           <u-button
             type="info"
             plain
@@ -48,8 +61,12 @@
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">当前筛选下暂无审核数据</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="checkbox-filled" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">当前筛选下暂无审核数据</text>
+      <text class="empty-state-pro__desc">后续有新的申报提交后，会自动出现在对应列表中。</text>
     </view>
 
     <view v-if="detailRecord" class="detail-mask" @click.self="closeDetail">
@@ -76,31 +93,37 @@
             <text class="detail-label">申报积分</text>
             <text class="detail-text">{{ detailRecord.claimedPoints }} 分</text>
           </view>
-          <view class="detail-row" v-if="detailRecord.location">
+          <view v-if="detailRecord.location" class="detail-row">
             <text class="detail-label">活动地点</text>
             <text class="detail-text">{{ detailRecord.location }}</text>
           </view>
-          <view class="detail-row" v-if="detailRecord.organization">
+          <view v-if="detailRecord.organization" class="detail-row">
             <text class="detail-label">授奖单位</text>
             <text class="detail-text">{{ detailRecord.organization }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">佐证材料</text>
-            <text class="detail-text">{{ detailRecord.evidenceFiles.join('、') }}</text>
+            <text class="detail-text">{{
+              detailRecord.evidenceFiles.join('、') || '暂无材料'
+            }}</text>
           </view>
         </view>
 
-        <view v-if="detailRecord.status === 'pending'" class="form-card">
+        <view v-if="detailRecord.status === 'pending'" class="detail-form-card">
           <view v-if="detailRecord.type === 'volunteer'" class="form-group">
             <text class="form-label">调整积分</text>
-            <u-input v-model="reviewForm.approvedPoints" type="number" placeholder="请输入审核积分" />
+            <u-input
+              v-model="reviewForm.approvedPoints"
+              type="number"
+              placeholder="请输入审核积分"
+            />
           </view>
 
           <view v-if="detailRecord.type === 'honor'" class="form-group">
             <text class="form-label">调整荣誉级别</text>
             <view class="level-row">
               <view
-                v-for="(item, index) in honorLevelOptions"
+                v-for="item in honorLevelOptions"
                 :key="item.id"
                 class="level-chip"
                 :class="{ active: reviewForm.levelId === item.id }"
@@ -117,7 +140,7 @@
           </view>
         </view>
 
-        <view class="detail-actions">
+        <view class="action-group">
           <u-button
             v-if="detailRecord.status === 'pending'"
             type="primary"
@@ -137,7 +160,7 @@
       </view>
     </view>
 
-    <GlobalBottomNav current="mine" />
+    <GlobalBottomNav current="admin" />
   </view>
 </template>
 
@@ -149,6 +172,7 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { honorLevels } from '@/utils/rules'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
 /** 管理员审核页，支持单条审核、批量通过和批量驳回。 */
 
@@ -186,7 +210,9 @@ const filtered = computed(() => {
 
 const isPendingTab = computed(() => current.value === 0 || current.value === 1)
 const selectAllText = computed(() =>
-  filtered.value.length > 0 && selectedIds.value.length === filtered.value.length ? '取消全选' : '全选'
+  filtered.value.length > 0 && selectedIds.value.length === filtered.value.length
+    ? '取消全选'
+    : '全选'
 )
 
 /** 将后端审核记录映射为页面展示字段。 */
@@ -256,7 +282,7 @@ const resetReviewForm = (record) => {
   reviewForm.rejectReason = record?.rejectReason || ''
 }
 
-/** 选择荣誉级别 */
+/** 选择荣誉级别。 */
 const onLevelSelect = (levelId) => {
   reviewForm.levelId = levelId
 }
@@ -306,8 +332,8 @@ const approveRecord = async (record) => {
     approvedPoints:
       record.type === 'volunteer'
         ? Number(reviewForm.approvedPoints || record.claimedPoints)
-        : honorLevelOptions.find((item) => item.id === (reviewForm.levelId || record.levelId))?.points ||
-          Number(record.claimedPoints || 0),
+        : honorLevelOptions.find((item) => item.id === (reviewForm.levelId || record.levelId))
+            ?.points || Number(record.claimedPoints || 0),
     levelId: record.type === 'honor' ? reviewForm.levelId || record.levelId : ''
   }
 
@@ -396,101 +422,34 @@ onShow(() => {
 </script>
 
 <style scoped>
-.toolbar-card {
-  margin-top: 16px;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+.tabs-shell {
+  padding-top: 14px;
 }
 
-.toolbar-text {
-  font-size: 13px;
-  color: #475569;
-}
-
-.batch-actions {
-  margin-top: 12px;
+.action-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.audit-list {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.audit-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.audit-main {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.audit-head {
+.audit-card-pro__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.audit-title-group {
+.audit-card-pro__actions {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.audit-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.audit-meta,
-.audit-desc {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.audit-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.empty-card {
-  margin-top: 16px;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 28px 20px;
-  text-align: center;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.empty-text {
-  font-size: 14px;
-  color: #94a3b8;
+  gap: 10px;
+  width: 110px;
 }
 
 .detail-mask {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(13, 34, 58, 0.44);
   display: flex;
   align-items: flex-end;
   z-index: 30;
@@ -500,23 +459,23 @@ onShow(() => {
   width: 100%;
   max-height: 84vh;
   background: #ffffff;
-  border-radius: 20px 20px 0 0;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow-y: auto;
 }
 
 .detail-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+  font-size: 20px;
+  font-weight: 800;
+  color: #12304e;
 }
 
 .detail-grid {
-  margin-top: 16px;
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .detail-row {
@@ -527,64 +486,60 @@ onShow(() => {
 
 .detail-label {
   font-size: 13px;
-  color: #64748b;
+  color: #7f95a9;
 }
 
 .detail-text {
   font-size: 15px;
-  color: #1f2937;
-  line-height: 1.6;
+  line-height: 1.75;
+  color: #35516f;
 }
 
-.form-card {
+.detail-form-card {
   margin-top: 18px;
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #f8fbff;
+  border: 1px solid #dbe7f2;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.form-group + .form-group {
+  margin-top: 16px;
 }
 
 .form-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #12304e;
 }
 
 .level-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .level-chip {
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #edf4fb;
+  border: 1px solid #d6e4f0;
 }
 
 .level-chip.active {
-  background: #dbeafe;
+  background: linear-gradient(135deg, rgba(29, 99, 216, 0.12), rgba(21, 164, 144, 0.12));
+  border-color: rgba(29, 99, 216, 0.26);
 }
 
 .level-chip-text {
-  font-size: 13px;
-  color: #334155;
-}
-
-.detail-actions {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  font-size: 14px;
+  color: #35516f;
+  font-weight: 700;
 }
 </style>
-
-

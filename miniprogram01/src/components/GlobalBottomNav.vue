@@ -1,10 +1,6 @@
 <template>
   <view class="bottom-nav" :class="{ 'bottom-nav--fixed': fixed }">
-    <view
-      v-if="showBack"
-      class="bottom-nav__item"
-      @click="goBack"
-    >
+    <view v-if="showBack" class="bottom-nav__item" @click="goBack">
       <uni-icons type="left" size="20" color="#64748b" />
       <text class="bottom-nav__text">返回</text>
     </view>
@@ -52,22 +48,19 @@ const props = defineProps({
 
 const userStore = useUserStore()
 
-const activeColor = '#c2410c'
-const inactiveColor = '#8c8c8c'
-
 const navItems = computed(() => {
   const items = [
-    { 
-      key: 'index', 
-      text: '首页', 
-      pagePath: '/pages/index/index', 
+    {
+      key: 'index',
+      text: '首页',
+      pagePath: '/pages/index/index',
       icon: '/static/tabbar/home.png',
       activeIcon: '/static/tabbar/home-active.png'
     },
-    { 
-      key: 'mine', 
-      text: '我的', 
-      pagePath: '/pages/mine/mine', 
+    {
+      key: 'mine',
+      text: '我的',
+      pagePath: '/pages/mine/mine',
       icon: '/static/tabbar/mine.png',
       activeIcon: '/static/tabbar/mine-active.png'
     }
@@ -108,10 +101,11 @@ const switchPage = (item) => {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  min-height: 68px;
-  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
-  background: #ffffff;
-  border-top: 1px solid #e5e7eb;
+  min-height: 76px;
+  padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.94);
+  border-top: 1px solid rgba(198, 215, 232, 0.72);
+  box-shadow: 0 -10px 24px rgba(19, 58, 107, 0.08);
   box-sizing: border-box;
 }
 
@@ -126,26 +120,33 @@ const switchPage = (item) => {
 .bottom-nav__item {
   flex: 1;
   min-height: 52px;
+  margin: 0 4px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.bottom-nav__item--active {
+  background: linear-gradient(135deg, rgba(29, 99, 216, 0.14), rgba(21, 164, 144, 0.14));
 }
 
 .bottom-nav__icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: block;
 }
 
 .bottom-nav__text {
   font-size: 13px;
-  color: #8c8c8c;
+  color: #6f869a;
 }
 
 .bottom-nav__text--active {
-  color: #c2410c;
+  color: #1648a5;
   font-weight: 700;
 }
 </style>

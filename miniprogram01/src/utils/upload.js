@@ -33,10 +33,15 @@ export const openSystemPermissionSetting = () =>
 const isCancelError = (message = '') => /cancel/i.test(message)
 
 /** 判断是否属于权限被拒绝，便于给出打开设置的引导。 */
-const isPermissionDeniedError = (message = '') => /auth deny|authorize|permission|denied/i.test(message)
+const isPermissionDeniedError = (message = '') =>
+  /auth deny|authorize|permission|denied/i.test(message)
 
 /** 统一调起图片选择，并过滤超过 50MB 的图片。 */
-export const chooseEvidenceImages = async ({ sourceType = 'album', count = 1, maxSize = MAX_FILE_SIZE } = {}) => {
+export const chooseEvidenceImages = async ({
+  sourceType = 'album',
+  count = 1,
+  maxSize = MAX_FILE_SIZE
+} = {}) => {
   const confirmed = await confirmMediaPermission(sourceType)
   if (!confirmed) {
     return { files: [], status: 'cancelled' }
@@ -126,8 +131,15 @@ export const getPermissionStatusLabel = (status) => {
 
 /** 支持上传的文件扩展名 */
 const ALLOWED_FILE_TYPES = [
-  '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-  '.pdf', '.txt', '.csv'
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.pdf',
+  '.txt',
+  '.csv'
 ]
 
 /** 上传文件前的权限说明 */
@@ -135,7 +147,8 @@ export const confirmFilePermission = () =>
   new Promise((resolve) => {
     uni.showModal({
       title: '权限申请说明',
-      content: '需要访问您的文件以上传佐证材料（如 Word、Excel、PDF 等），仅在您主动提交申报时使用。是否继续？',
+      content:
+        '需要访问您的文件以上传佐证材料（如 Word、Excel、PDF 等），仅在您主动提交申报时使用。是否继续？',
       success: (res) => resolve(!!res.confirm),
       fail: () => resolve(false)
     })

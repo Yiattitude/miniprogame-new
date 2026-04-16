@@ -64,7 +64,11 @@ export const setupComplianceInterceptors = (userStore) => {
     uni.addInterceptor(method, {
       invoke(args) {
         const url = args?.url || ''
-        if (!url || isLoginRoute(url) || ensureComplianceReady(userStore, { redirect: false, toast: false })) {
+        if (
+          !url ||
+          isLoginRoute(url) ||
+          ensureComplianceReady(userStore, { redirect: false, toast: false })
+        ) {
           return args
         }
         setTimeout(() => redirectToLogin('请先完成隐私同意与用户认证'), 0)

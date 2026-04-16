@@ -129,7 +129,8 @@ export const useUserStore = defineStore('user', {
       if (payload?.role) {
         this.isAdmin = ADMIN_ROLE_SET.has(payload.role)
       }
-      this.realnameSubmittedAt = payload?.submittedAt || (this.realnameVerified ? new Date().toISOString() : '')
+      this.realnameSubmittedAt =
+        payload?.submittedAt || (this.realnameVerified ? new Date().toISOString() : '')
       this.persist()
     },
     /** 记录订阅消息申请结果，便于“我的”页面展示。 */

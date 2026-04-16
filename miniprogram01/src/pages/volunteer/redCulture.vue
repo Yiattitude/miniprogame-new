@@ -13,4 +13,3 @@ import VolunteerCheckin from '@/components/VolunteerCheckin.vue'
   min-height: 100%;
 }
 </style>
-

@@ -1,21 +1,33 @@
 <template>
-  <view class="page page-with-nav page-with-tabbar">
-    <view class="section-title">{{ pageTitle }}</view>
-    <text class="helper-text">{{ pageHelperText }}</text>
-
-    <view class="search-card">
-      <u-search
-        v-model="keyword"
-        placeholder="按姓名或手机号搜索"
-        :showAction="false"
-        @search="refreshUsers"
-        @custom="refreshUsers"
-        @clear="refreshUsers"
-      />
+  <view class="page page-with-nav page-with-tabbar page-shell page-shell--admin">
+    <view class="page-hero page-hero--admin">
+      <view class="hero-badge">
+        <uni-icons type="personadd-filled" size="16" color="#ffffff" />
+        <text>{{ pageTitle }}</text>
+      </view>
+      <text class="hero-title">{{ isSuperAdmin ? '管理员权限配置' : '账号状态管理' }}</text>
+      <text class="hero-subtitle">{{ pageHelperText }}</text>
     </view>
 
-    <view class="filter-card">
-      <text class="filter-title">筛选</text>
+    <view class="themed-form-card">
+      <text class="field-label">搜索账号</text>
+      <text class="field-helper">可按姓名或手机号查找目标用户，提升管理效率。</text>
+      <view class="search-wrap">
+        <u-search
+          v-model="keyword"
+          placeholder="按姓名或手机号搜索"
+          :show-action="false"
+          bg-color="#f9fbff"
+          @search="refreshUsers"
+          @custom="refreshUsers"
+          @clear="refreshUsers"
+        />
+      </view>
+    </view>
+
+    <view class="themed-card">
+      <text class="card-kicker">筛选条件</text>
+      <text class="card-text-main">根据角色或账号状态快速缩小结果范围。</text>
       <view class="filter-options">
         <view
           v-for="item in filterOptions"
@@ -29,17 +41,24 @@
       </view>
     </view>
 
-    <view v-if="displayUsers.length > 0" class="user-list">
-      <view v-for="item in displayUsers" :key="item._id" class="user-card">
-        <view class="user-head">
-          <view class="user-main">
-            <text class="user-name">{{ item.realName || '未实名用户' }}</text>
-            <text class="user-meta">{{ item.phone || '未绑定手机号' }}</text>
+    <view v-if="displayUsers.length > 0" class="simple-list">
+      <view v-for="item in displayUsers" :key="item._id" class="list-row-card user-card-pro">
+        <view class="list-row-card__body">
+          <view class="user-card-pro__head">
+            <text class="list-row-card__title">{{ item.realName || '未实名用户' }}</text>
+            <u-tag
+              :text="formatRoleText(item.role)"
+              size="mini"
+              :type="formatRoleTagType(item.role)"
+            />
           </view>
-          <u-tag :text="formatRoleText(item.role)" size="mini" :type="formatRoleTagType(item.role)" />
+          <text class="list-row-card__desc">{{ item.phone || '未绑定手机号' }}</text>
+          <text class="list-row-card__meta">
+            {{ item.isDeleted ? '当前状态：已禁用' : '当前状态：可用' }}
+          </text>
         </view>
 
-        <view class="action-row">
+        <view class="user-card-pro__actions">
           <u-button
             v-if="isSuperAdmin && item.role === 'member'"
             type="primary"
@@ -72,8 +91,12 @@
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">暂无可管理用户</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="person" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">暂无可管理用户</text>
+      <text class="empty-state-pro__desc">当前筛选条件下没有符合条件的用户记录。</text>
     </view>
 
     <GlobalBottomNav current="admin" />
@@ -88,8 +111,9 @@ import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { useUserStore } from '@/store'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
-/** super-admin 管理员设置页，提供一键设为管理员与回收管理员能力。 */
+/** 账号与角色管理页，支持管理员设置、回收和禁用操作。 */
 
 const keyword = ref('')
 const users = ref([])
@@ -102,8 +126,8 @@ const statusFilter = ref('all')
 const pageTitle = computed(() => (isSuperAdmin.value ? '设置管理员' : '禁用用户'))
 const pageHelperText = computed(() =>
   isSuperAdmin.value
-    ? '仅 super-admin 可操作：支持一键设为管理员 / 回收管理员。'
-    : '仅 admin 可操作：支持逻辑禁用用户账号（不可操作 super-admin）。'
+    ? '仅 super-admin 可操作：支持一键设为管理员与回收管理员。'
+    : '仅 admin 可操作：支持逻辑禁用用户账号，不可操作 super-admin。'
 )
 
 /** 根据当前身份动态返回筛选项。 */
@@ -125,7 +149,9 @@ const filterOptions = computed(() => {
 })
 
 /** 当前选中的筛选值。 */
-const activeFilterValue = computed(() => (isSuperAdmin.value ? roleFilter.value : statusFilter.value))
+const activeFilterValue = computed(() =>
+  isSuperAdmin.value ? roleFilter.value : statusFilter.value
+)
 
 /** 按角色或状态过滤最终展示列表。 */
 const displayUsers = computed(() => {
@@ -286,131 +312,60 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page-with-tabbar {
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
-}
-
-.section-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  margin: 20px 0 10px;
-}
-
-.helper-text {
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.7;
-}
-
-.search-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 14px;
-  margin: 14px 0;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.filter-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 14px;
-  margin: 0 0 14px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.filter-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
+.search-wrap {
+  margin-top: 12px;
 }
 
 .filter-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .filter-chip {
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6e4f0;
+  background: #f8fbff;
 }
 
 .filter-chip--active {
-  border-color: #c2410c;
-  background: #fff7ed;
+  border-color: rgba(29, 99, 216, 0.3);
+  background: linear-gradient(135deg, rgba(29, 99, 216, 0.12), rgba(21, 164, 144, 0.12));
 }
 
 .filter-chip-text {
-  font-size: 13px;
-  color: #334155;
-}
-
-.user-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.user-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.user-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.user-main {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.user-name {
-  font-size: 17px;
+  font-size: 14px;
+  color: #35516f;
   font-weight: 700;
-  color: #0f172a;
 }
 
-.user-meta {
-  font-size: 13px;
-  color: #64748b;
+.user-card-pro {
+  align-items: center;
 }
 
-.action-row {
+.user-card-pro__head {
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-card-pro__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .fixed-text {
   font-size: 13px;
-  color: #94a3b8;
-}
-
-.empty-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px 16px;
-  margin-top: 12px;
-  text-align: center;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.empty-text {
-  font-size: 14px;
-  color: #94a3b8;
+  color: #7f95a9;
+  line-height: 1.6;
 }
 </style>

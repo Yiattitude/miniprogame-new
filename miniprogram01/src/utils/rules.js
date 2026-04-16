@@ -40,9 +40,7 @@ export const volunteerModules = [
     desc: '帮扶困难老同志等',
     min: 1,
     max: 5,
-    rules: [
-      '帮扶困难老同志、独居老人等特殊群体'
-    ]
+    rules: ['帮扶困难老同志、独居老人等特殊群体']
   },
   {
     id: 'other-service',
@@ -50,9 +48,7 @@ export const volunteerModules = [
     desc: '未涵盖的社区服务',
     min: 1,
     max: 5,
-    rules: [
-      '未涵盖的其他社区志愿服务'
-    ]
+    rules: ['未涵盖的其他社区志愿服务']
   }
 ]
 
