@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@dcloudio/vite-plugin-uni": "^3.0.0-alpha-5000720260327001",
+    "@rollup/rollup-win32-x64-msvc": "^4.60.2",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.5",

@@ -1375,10 +1375,14 @@ async function getUserProfile(openid) {
     return { code: 403, message: '账号已禁用，请联系管理员' }
   }
   let normalizedUser = normalizeUserData(user)
+  const storedVolunteerPoints = Number(normalizedUser?.volunteerPoints || 0)
+  const storedHonorPoints = Number(normalizedUser?.honorPoints || 0)
+  const storedTotalPoints = Number(normalizedUser?.totalPoints || 0)
   const needBinding = !normalizedUser?.realName || !normalizedUser?.phone
   const needMigrateScoreFields =
     !Object.prototype.hasOwnProperty.call(user || {}, 'volunteerPoints') ||
-    !Object.prototype.hasOwnProperty.call(user || {}, 'honorPoints')
+    !Object.prototype.hasOwnProperty.call(user || {}, 'honorPoints') ||
+    storedTotalPoints !== storedVolunteerPoints + storedHonorPoints
 
   if (needMigrateScoreFields) {
     const [volunteerAgg, honorAgg] = await Promise.all([
@@ -1701,6 +1705,8 @@ async function adminImport(data = {}, openid) {
       const targetOpenid = String(
         pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
       ).trim()
+      const rowRealName = String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim()
+      const rowPhone = String(pickValue(row, ['phone', '手机号'])).trim()
 
       if (!title || !location || !content || !Number.isFinite(points) || points <= 0) {
         failed.push({ type: 'volunteer', row, reason: '志愿记录字段不完整' })
@@ -1739,17 +1745,27 @@ async function adminImport(data = {}, openid) {
       if (targetOpenid) {
         const targetUser = await ensureUser(targetOpenid)
         const nextPoints = Number(targetUser.totalPoints || 0) + points
+        const nextVolunteerPoints = Number(targetUser.volunteerPoints || 0) + points
         const nextCheckinCount = Number(targetUser.checkinCount || 0) + 1
+        const userPatch = {
+          totalPoints: nextPoints,
+          volunteerPoints: nextVolunteerPoints,
+          checkinCount: nextCheckinCount,
+          updatedAt: db.serverDate()
+        }
+
+        /** 导入时若用户还未补全实名或手机号，则优先回填表格中的现成信息。 */
+        if (rowRealName && !String(targetUser.realName || '').trim()) {
+          userPatch.realName = rowRealName
+        }
+        if (rowPhone && !String(targetUser.phone || '').trim()) {
+          userPatch.phone = rowPhone
+        }
+
         await db
           .collection('users')
           .doc(targetUser._id)
-          .update({
-            data: {
-              totalPoints: nextPoints,
-              checkinCount: nextCheckinCount,
-              updatedAt: db.serverDate()
-            }
-          })
+          .update({ data: userPatch })
         await db.collection('points_logs').add({
           data: {
             userId: targetUser._id,
@@ -1789,6 +1805,8 @@ async function adminImport(data = {}, openid) {
       const targetOpenid = String(
         pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
       ).trim()
+      const rowRealName = String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim()
+      const rowPhone = String(pickValue(row, ['phone', '手机号'])).trim()
 
       if (!levelId || !Number.isFinite(honorPoints) || honorPoints <= 0) {
         failed.push({ type: 'honor', row, reason: '荣誉级别或积分不合法' })
@@ -1826,15 +1844,25 @@ async function adminImport(data = {}, openid) {
 
       if (targetUser && targetOpenid) {
         const nextPoints = Number(targetUser.totalPoints || 0) + honorPoints
+        const nextHonorPoints = Number(targetUser.honorPoints || 0) + honorPoints
+        const userPatch = {
+          totalPoints: nextPoints,
+          honorPoints: nextHonorPoints,
+          updatedAt: db.serverDate()
+        }
+
+        /** 导入荣誉数据时，同步补齐用户实名与手机号，避免前端资料页显示为空。 */
+        if (rowRealName && !String(targetUser.realName || '').trim()) {
+          userPatch.realName = rowRealName
+        }
+        if (rowPhone && !String(targetUser.phone || '').trim()) {
+          userPatch.phone = rowPhone
+        }
+
         await db
           .collection('users')
           .doc(targetUser._id)
-          .update({
-            data: {
-              totalPoints: nextPoints,
-              updatedAt: db.serverDate()
-            }
-          })
+          .update({ data: userPatch })
         await db.collection('points_logs').add({
           data: {
             userId: targetUser._id,
