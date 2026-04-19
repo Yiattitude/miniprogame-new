@@ -30,21 +30,34 @@ onHide(() => {
 
 <style lang="scss">
 @import 'uview-plus/index.scss';
+@import '@/styles/theme.scss';
 
 page {
-  --app-bg: #f8fafc;
+  --app-bg: #f5f9ff;
+  --app-bg-soft: #eef6fb;
   --app-card-bg: #ffffff;
-  --app-text-primary: #0f172a;
-  --app-text-secondary: #334155;
-  --app-text-muted: #475569;
-  --app-text-light: #64748b;
-  --app-border: #cbd5e1;
-  --app-accent: #c2410c;
-  --app-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  --app-card-alt: #f8fbff;
+  --app-text-primary: #12304e;
+  --app-text-secondary: #35516f;
+  --app-text-muted: #5f7992;
+  --app-text-light: #7f95a9;
+  --app-border: #c6d7e8;
+  --app-border-soft: #dbe7f2;
+  --app-primary: #1d63d8;
+  --app-primary-deep: #1648a5;
+  --app-secondary: #15a490;
+  --app-accent: #e3a63a;
+  --app-danger: #c85b51;
+  --app-success: #0f9c7e;
+  --app-fill-soft: #eef5ff;
+  --app-fill-brand: linear-gradient(135deg, #1d63d8 0%, #177ddc 48%, #15a490 100%);
+  --app-fill-honor: linear-gradient(135deg, #1d63d8 0%, #327de0 42%, #e3a63a 100%);
+  --app-shadow: 0 18px 34px rgba(19, 58, 107, 0.08);
+  --app-shadow-strong: 0 22px 40px rgba(25, 88, 181, 0.16);
   font-size: 17px;
   line-height: 1.7;
   color: var(--app-text-primary);
-  background-color: var(--app-bg);
+  background: var(--app-bg);
 }
 
 .page {
@@ -79,8 +92,9 @@ page {
 .log-card,
 .points-card {
   background: var(--app-card-bg);
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 18px;
+  border: 1px solid rgba(172, 199, 231, 0.42);
   box-shadow: var(--app-shadow);
 }
 
@@ -97,7 +111,7 @@ page {
 
 .empty-card {
   background: var(--app-card-bg);
-  border-radius: 16px;
+  border-radius: 24px;
   min-height: 132px;
   padding: 24px 20px;
   display: flex;
@@ -126,8 +140,8 @@ page {
 
 .u-input__content,
 .u-textarea {
-  background: var(--app-card-bg) !important;
-  border: 1px solid var(--app-border) !important;
+  background: #f9fbff !important;
+  border: 1px solid var(--app-border-soft) !important;
 }
 
 .u-textarea__field {
@@ -149,9 +163,26 @@ page {
 button,
 .u-button {
   min-height: 52px;
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   font-size: 17px !important;
   font-weight: 700 !important;
+}
+
+.u-button--primary {
+  background: linear-gradient(135deg, #1d63d8 0%, #177ddc 48%, #15a490 100%) !important;
+  border: none !important;
+  box-shadow: 0 14px 26px rgba(29, 99, 216, 0.18) !important;
+}
+
+.u-button--info {
+  color: var(--app-primary-deep) !important;
+  border-color: rgba(29, 99, 216, 0.22) !important;
+  background: rgba(244, 249, 255, 0.92) !important;
+}
+
+.u-button--error {
+  background: linear-gradient(135deg, #c85b51 0%, #de7b69 100%) !important;
+  border: none !important;
 }
 
 input,
@@ -172,14 +203,15 @@ textarea,
 }
 
 .u-cell-group {
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
+  border: 1px solid rgba(172, 199, 231, 0.42);
   box-shadow: var(--app-shadow);
 }
 
 .u-cell__body {
-  min-height: 60px;
-  padding: 16px 16px !important;
+  min-height: 64px;
+  padding: 18px 16px !important;
 }
 
 .u-cell__title-text {
@@ -215,11 +247,93 @@ textarea,
 .u-tabs__wrapper__nav__line {
   height: 4px !important;
   border-radius: 999px;
+  background: linear-gradient(90deg, #1d63d8, #15a490) !important;
 }
 
 .u-tag {
-  min-height: 28px;
-  padding: 0 8px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px !important;
+}
+
+.u-search {
+  border-radius: 18px !important;
+}
+
+.u-search__content {
+  min-height: 50px !important;
+  border-radius: 16px !important;
+  background: #f9fbff !important;
+  border: 1px solid rgba(198, 215, 232, 0.72) !important;
+  padding: 0 14px !important;
+  box-sizing: border-box;
+}
+
+.u-search__content__input {
+  font-size: 16px !important;
+  color: var(--app-text-primary) !important;
+}
+
+.u-search__content__icon {
+  color: var(--app-text-light) !important;
+}
+
+.u-picker__view,
+.u-datetime-picker__view {
+  border-radius: 24px 24px 0 0 !important;
+  overflow: hidden;
+}
+
+.u-picker__view__toolbar,
+.u-datetime-picker__header {
+  min-height: 56px !important;
+  background: #f8fbff !important;
+  border-bottom: 1px solid rgba(198, 215, 232, 0.56) !important;
+}
+
+.u-picker__view__toolbar__button,
+.u-datetime-picker__header__btn {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--app-primary-deep) !important;
+}
+
+.u-picker__view__toolbar__title,
+.u-datetime-picker__header__title {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  color: var(--app-text-primary) !important;
+}
+
+.u-picker__view__column__item,
+.u-picker-item {
+  font-size: 18px !important;
+  color: var(--app-text-primary) !important;
+}
+
+.u-modal__content {
+  padding-top: 6px !important;
+}
+
+.u-modal__title {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  color: var(--app-text-primary) !important;
+}
+
+.u-modal__content__text {
+  font-size: 15px !important;
+  line-height: 1.75 !important;
+  color: var(--app-text-secondary) !important;
+}
+
+.u-modal__button-group__wrapper {
+  min-height: 54px !important;
+}
+
+.u-modal__button-group__wrapper__text {
+  font-size: 16px !important;
+  font-weight: 700 !important;
 }
 
 /* 隐藏原生 tabBar，使用自定义组件 GlobalBottomNav 替代。 */

@@ -129,6 +129,12 @@
 			"style": {
 				"navigationBarTitleText": "全量数据导出"
 			}
+		},
+		{
+			"path": "pages/admin/roles",
+			"style": {
+				"navigationBarTitleText": "设置管理员"
+			}
 		}
 	],
 	"globalStyle": {

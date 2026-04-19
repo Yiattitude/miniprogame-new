@@ -1,5 +1,7 @@
 ﻿const BASE_URL = String(import.meta.env.VITE_BASE_URL || '').trim()
-const CLOUD_FUNCTION_NAME = String(import.meta.env.VITE_CLOUD_FUNCTION_NAME || 'volunteer-service').trim()
+const CLOUD_FUNCTION_NAME = String(
+  import.meta.env.VITE_CLOUD_FUNCTION_NAME || 'volunteer-service'
+).trim()
 const CLOUD_ENV_ID = String(import.meta.env.VITE_CLOUD_ENV_ID || '').trim()
 const CLOUD_TIMEOUT_MS = Number(import.meta.env.VITE_CLOUD_TIMEOUT_MS || 12000)
 
@@ -13,11 +15,13 @@ const ROUTE_ACTION_MAP = {
   'POST /honor/submit': 'submitHonor',
   'GET /honor/records': 'getHonorRecords',
   'POST /admin/import': 'adminImport',
-  'GET /admin/import-template': 'adminImportTemplate',
   'GET /admin/dashboard': 'adminDashboardSummary',
   'GET /admin/audit': 'adminAuditList',
   'POST /admin/audit': 'adminAuditOperate',
-  'GET /admin/export': 'adminExport'
+  'GET /admin/export': 'adminExport',
+  'GET /admin/users': 'adminGetUsers',
+  'POST /admin/users/role': 'adminSetUserRole',
+  'POST /admin/users/disable': 'adminDisableUser'
 }
 
 let wxCloudInitialized = false
@@ -43,7 +47,10 @@ const attachOpenid = (data, openid) => {
 
   if (typeof data !== 'object' || Array.isArray(data)) return data
 
-  if (Object.prototype.hasOwnProperty.call(data, 'openid') || Object.prototype.hasOwnProperty.call(data, '_openid')) {
+  if (
+    Object.prototype.hasOwnProperty.call(data, 'openid') ||
+    Object.prototype.hasOwnProperty.call(data, '_openid')
+  ) {
     return data
   }
 
@@ -64,7 +71,10 @@ const normalizeRoutePath = (url = '') => {
 }
 
 /** 将 method 标准化为大写，默认 GET。 */
-const normalizeMethod = (method = 'GET') => String(method || 'GET').trim().toUpperCase()
+const normalizeMethod = (method = 'GET') =>
+  String(method || 'GET')
+    .trim()
+    .toUpperCase()
 
 /** 判断字符串是否为完整 http(s) 地址。 */
 const isHttpUrl = (value = '') => /^https?:\/\//i.test(String(value || '').trim())
@@ -79,7 +89,8 @@ const resolveHttpUrl = (url = '') => {
 }
 
 /** 将路由 method+path 转为云函数 action。 */
-const resolveAction = (method, url) => ROUTE_ACTION_MAP[`${normalizeMethod(method)} ${normalizeRoutePath(url)}`] || ''
+const resolveAction = (method, url) =>
+  ROUTE_ACTION_MAP[`${normalizeMethod(method)} ${normalizeRoutePath(url)}`] || ''
 
 /** 统一封装 uni.request。 */
 const requestByHttp = (options) =>
@@ -117,11 +128,14 @@ const ensureWxCloudReady = () => {
 const requestByCloudFunction = ({ url, method, data, header, token }) =>
   new Promise((resolve, reject) => {
     let settled = false
-    const timeoutTimer = setTimeout(() => {
-      if (settled) return
-      settled = true
-      reject({ errMsg: '请求超时，请稍后重试' })
-    }, Number.isFinite(CLOUD_TIMEOUT_MS) && CLOUD_TIMEOUT_MS > 0 ? CLOUD_TIMEOUT_MS : 12000)
+    const timeoutTimer = setTimeout(
+      () => {
+        if (settled) return
+        settled = true
+        reject({ errMsg: '请求超时，请稍后重试' })
+      },
+      Number.isFinite(CLOUD_TIMEOUT_MS) && CLOUD_TIMEOUT_MS > 0 ? CLOUD_TIMEOUT_MS : 12000
+    )
 
     const action = resolveAction(method, url)
     const path = normalizeRoutePath(url)
@@ -224,8 +238,4 @@ export const request = (options = {}) => {
     header,
     token
   })
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb

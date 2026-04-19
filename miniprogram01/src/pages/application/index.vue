@@ -1,38 +1,53 @@
-﻿<template>
-  <view class="page page-with-nav">
-    <view class="summary-grid">
-      <view class="summary-card pending">
-        <text class="summary-label">待审核</text>
-        <text class="summary-value">{{ stats.pending }}</text>
+<template>
+  <view class="page page-with-nav page-shell page-shell--mine">
+    <view class="page-hero page-hero--mine">
+      <view class="hero-badge">
+        <uni-icons type="compose" size="16" color="#ffffff" />
+        <text>我的申请</text>
       </view>
-      <view class="summary-card approved">
-        <text class="summary-label">已通过</text>
-        <text class="summary-value">{{ stats.approved }}</text>
+      <text class="hero-title">申报状态集中查看，驳回记录可快速重提</text>
+      <text class="hero-subtitle">统一查看志愿服务与荣誉获奖申请，便于及时了解审核进度与处理结果。</text>
+    </view>
+
+    <view class="data-grid-three">
+      <view class="data-mini-card data-mini-card--amber">
+        <text class="data-mini-card__label">待审核</text>
+        <text class="data-mini-card__value">{{ stats.pending }}</text>
       </view>
-      <view class="summary-card rejected">
-        <text class="summary-label">已驳回</text>
-        <text class="summary-value">{{ stats.rejected }}</text>
+      <view class="data-mini-card data-mini-card--green">
+        <text class="data-mini-card__label">已通过</text>
+        <text class="data-mini-card__value">{{ stats.approved }}</text>
+      </view>
+      <view class="data-mini-card data-mini-card--red">
+        <text class="data-mini-card__label">已驳回</text>
+        <text class="data-mini-card__value">{{ stats.rejected }}</text>
       </view>
     </view>
 
-    <u-tabs :list="tabs" :current="current" @change="onTabChange" />
+    <view class="themed-card tabs-shell">
+      <u-tabs :list="tabs" :current="current" @change="onTabChange" />
+    </view>
 
-    <view v-if="filtered.length > 0" class="record-list">
-      <view v-for="item in filtered" :key="item.id" class="record-card" @click="showDetail(item)">
-        <view class="record-head">
-          <view class="record-title-group">
-            <text class="record-title">{{ item.title }}</text>
-            <text class="record-category">{{ item.categoryName }}</text>
+    <view v-if="filtered.length > 0" class="simple-list">
+      <view v-for="item in filtered" :key="item.id" class="list-row-card" @click="showDetail(item)">
+        <view class="list-row-card__body">
+          <view class="application-card__head">
+            <text class="list-row-card__title">{{ item.title }}</text>
+            <u-tag :text="item.statusText" size="mini" :type="item.tagType" />
           </view>
-          <u-tag :text="item.statusText" size="mini" :type="item.tagType" />
+          <text class="list-row-card__desc">{{ item.categoryName }}</text>
+          <text class="list-row-card__desc">{{ item.recordDesc }}</text>
+          <text class="list-row-card__meta">提交时间：{{ item.submitTime }}</text>
         </view>
-        <text class="record-desc">{{ item.recordDesc }}</text>
-        <text class="record-time">提交时间：{{ item.submitTime }}</text>
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">当前状态下暂无申报记录</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="paperplane-filled" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">当前状态下暂无申报记录</text>
+      <text class="empty-state-pro__desc">后续提交新申请后，会自动出现在对应状态列表中。</text>
     </view>
 
     <view v-if="selectedRecord" class="detail-mask" @click.self="closeDetail">
@@ -51,15 +66,15 @@
             <text class="detail-label">申报积分</text>
             <text class="detail-text">{{ selectedRecord.claimedPoints }} 分</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.status === 'approved'">
+          <view v-if="selectedRecord.status === 'approved'" class="detail-row">
             <text class="detail-label">审核通过积分</text>
             <text class="detail-text">{{ selectedRecord.approvedPoints }} 分</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.location">
+          <view v-if="selectedRecord.location" class="detail-row">
             <text class="detail-label">活动地点</text>
             <text class="detail-text">{{ selectedRecord.location }}</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.organization">
+          <view v-if="selectedRecord.organization" class="detail-row">
             <text class="detail-label">授奖单位</text>
             <text class="detail-text">{{ selectedRecord.organization }}</text>
           </view>
@@ -69,18 +84,9 @@
           </view>
           <view class="detail-row">
             <text class="detail-label">佐证材料</text>
-            <view class="evidence-list">
-              <text
-                v-for="(file, fileIndex) in selectedRecord.evidenceFiles"
-                :key="`${selectedRecord.id}-evidence-${fileIndex}`"
-                class="evidence-item"
-                @click="openEvidenceFile(file)"
-              >
-                {{ resolveEvidenceName(file, fileIndex) }}
-              </text>
-            </view>
+            <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') || '暂无材料' }}</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.rejectReason">
+          <view v-if="selectedRecord.rejectReason" class="detail-row">
             <text class="detail-label">驳回原因</text>
             <text class="detail-text warning-text">{{ selectedRecord.rejectReason }}</text>
           </view>
@@ -109,20 +115,16 @@ import { computed, ref } from 'vue'
 import { fetchHonorRecords } from '@/api/honor'
 import { fetchVolunteerRecords } from '@/api/volunteer'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import { ensureComplianceReady } from '@/utils/auth'
 import { getHonorLevel, getVolunteerModule } from '@/utils/rules'
-import { previewCloudFile, resolveFileName } from '@/utils/upload'
 
 /** 我的申请页面，展示待审核、已通过、已驳回记录，并支持驳回后重提。 */
 
-const tabs = [
-  { name: '待审核' },
-  { name: '已通过' },
-  { name: '已驳回' }
-]
+const tabs = [{ name: '待审核' }, { name: '已通过' }, { name: '已驳回' }]
 
 const current = ref(0)
 const records = ref([])
@@ -209,16 +211,16 @@ const loadRecords = async () => {
       fetchAllPages(fetchHonorRecords)
     ])
 
-    records.value = [
-      ...volunteerList.map(mapVolunteerRecord),
-      ...honorList.map(mapHonorRecord)
-    ].sort((left, right) => new Date(right.submitTime || 0).getTime() - new Date(left.submitTime || 0).getTime())
+    records.value = [...volunteerList.map(mapVolunteerRecord), ...honorList.map(mapHonorRecord)].sort(
+      (left, right) => new Date(right.submitTime || 0).getTime() - new Date(left.submitTime || 0).getTime()
+    )
   } catch (error) {
     records.value = []
     showErrorToast(resolveApiErrorMessage(error, '申请记录加载失败，请稍后重试'))
   }
 }
 
+/** 根据当前页签返回展示记录。 */
 const filtered = computed(() => {
   const statusKey = ['pending', 'approved', 'rejected'][current.value]
   return records.value
@@ -240,21 +242,6 @@ const onTabChange = (index) => {
 /** 打开申报详情弹层。 */
 const showDetail = (item) => {
   selectedRecord.value = item
-}
-
-/** 将附件字段转换为更易读的文件名。 */
-const resolveEvidenceName = (file, index) => {
-  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
-  const name = typeof file === 'object' ? file?.name || '' : ''
-  return name || resolveFileName(fileRef) || `附件${index + 1}`
-}
-
-/** 打开申请详情中的佐证材料。 */
-const openEvidenceFile = async (file) => {
-  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
-  await previewCloudFile(fileRef, {
-    fileName: typeof file === 'object' ? file?.name || '' : ''
-  })
 }
 
 /** 关闭申报详情弹层。 */
@@ -296,122 +283,60 @@ onShow(() => {
 </script>
 
 <style scoped>
-.summary-grid {
+.data-grid-three {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.summary-card {
-  border-radius: 14px;
-  padding: 14px 10px;
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-}
-
-.summary-card.pending {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-}
-
-.summary-card.approved {
-  background: linear-gradient(135deg, #10b981, #14b8a6);
-}
-
-.summary-card.rejected {
-  background: linear-gradient(135deg, #ef4444, #f97316);
-}
-
-.summary-label {
-  font-size: 12px;
-}
-
-.summary-value {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.record-list {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-.record-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+.data-mini-card {
+  border-radius: 22px;
+  padding: 16px 12px;
+  color: #ffffff;
+  box-shadow: 0 16px 28px rgba(19, 58, 107, 0.12);
 }
 
-.evidence-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.data-mini-card--amber {
+  background: linear-gradient(135deg, #d58b18 0%, #efb14a 100%);
 }
 
-.evidence-item {
+.data-mini-card--green {
+  background: linear-gradient(135deg, #11907f 0%, #16b39f 100%);
+}
+
+.data-mini-card--red {
+  background: linear-gradient(135deg, #c85b51 0%, #e27b69 100%);
+}
+
+.data-mini-card__label {
+  display: block;
   font-size: 13px;
-  color: #0076ff;
-  text-decoration: underline;
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
 }
 
-.record-head {
+.data-mini-card__value {
+  display: block;
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tabs-shell {
+  padding-top: 14px;
+}
+
+.application-card__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.record-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.record-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.record-category {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.record-desc,
-.record-time {
-  font-size: 13px;
-  color: #475569;
-}
-
-.empty-card {
-  margin-top: 16px;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 28px 20px;
-  text-align: center;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
-.empty-text {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
 .detail-mask {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(13, 34, 58, 0.44);
   display: flex;
   align-items: flex-end;
   z-index: 30;
@@ -419,25 +344,25 @@ onShow(() => {
 
 .detail-panel {
   width: 100%;
-  max-height: 80vh;
+  max-height: 82vh;
   background: #ffffff;
-  border-radius: 20px 20px 0 0;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow-y: auto;
 }
 
 .detail-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+  font-size: 20px;
+  font-weight: 800;
+  color: #12304e;
 }
 
 .detail-grid {
-  margin-top: 16px;
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .detail-row {
@@ -448,17 +373,17 @@ onShow(() => {
 
 .detail-label {
   font-size: 13px;
-  color: #64748b;
+  color: #7f95a9;
 }
 
 .detail-text {
   font-size: 15px;
-  color: #1f2937;
-  line-height: 1.6;
+  color: #35516f;
+  line-height: 1.75;
 }
 
 .warning-text {
-  color: #dc2626;
+  color: #c85b51;
 }
 
 .detail-actions {
@@ -468,10 +393,3 @@ onShow(() => {
   gap: 12px;
 }
 </style>
-<<<<<<< HEAD
-
-
-=======
-
-
->>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb

@@ -1,45 +1,81 @@
 <template>
-  <view class="page page-with-nav">
-    <view class="header">
-      
-      <text class="app-title">银才荟</text>
-
-
-       <view class="welcome-card">
-      <view class="welcome-content">
-        <text class="welcome-title">欢迎使用银才荟志愿服务积分管理平台</text>
+  <view class="page page-with-nav page-shell">
+    <view class="page-hero">
+      <view class="hero-badge">
+        <uni-icons type="staff-filled" size="16" color="#ffffff" />
+        <text>银才荟适老服务平台</text>
       </view>
-    </view>
+      <text class="hero-title">欢迎使用国网退休人员积分申报平台</text>
+      <text class="hero-subtitle">
+        提供志愿服务、荣誉获奖一站式申报与积分查看，让操作更清晰、填写更安心。
+      </text>
 
-    <view class="entry-list">
-      <view class="entry-card" @click="goVolunteer">
-        <view class="entry-card__decoration entry-card__decoration--red"></view>
-        <view class="entry-content">
-          <view class="entry-icon">
-            <uni-icons type="heart-filled" size="28" color="#ff4d4f"></uni-icons>
-          </view>
-          <view class="entry-info">
-            <text class="entry-title">志愿服务</text>
-            <text class="entry-desc">申报志愿活动，累计积分</text>
-          </view>
+      <view class="hero-metrics">
+        <view class="hero-pill">
+          <text class="hero-pill__label">当前总积分</text>
+          <text class="hero-pill__value">{{ totalPoints }}</text>
         </view>
-      </view>
-      <view class="entry-card" @click="goHonor">
-        <view class="entry-card__decoration entry-card__decoration--yellow"></view>
-        <view class="entry-content">
-          <view class="entry-icon">
-            <uni-icons type="medal" size="28" color="#faad14"></uni-icons>
-          </view>
-          <view class="entry-info">
-            <text class="entry-title">荣誉获奖</text>
-            <text class="entry-desc">申报荣誉奖项，累计积分</text>
-          </view>
+        <view class="hero-pill">
+          <text class="hero-pill__label">服务对象</text>
+          <text class="hero-pill__value hero-pill__value--small">退休人员</text>
         </view>
       </view>
     </view>
+
+    <view class="section-heading">
+      <text class="section-heading__title">常用申报入口</text>
+      <text class="section-heading__desc">按业务类型快速进入</text>
+    </view>
+
+    <view class="feature-grid">
+      <view class="feature-card feature-card--volunteer" @click="goVolunteer">
+        <view class="feature-card__head">
+          <view class="feature-card__title-row">
+            <view class="feature-card__icon">
+              <uni-icons type="heart-filled" size="28" color="#ffffff" />
+            </view>
+            <text class="feature-card__title">志愿服务</text>
+          </view>
+          <text class="feature-card__desc">申报志愿活动、查看积分规则与历史记录。</text>
+          <text class="feature-card__meta">五类服务模块可选</text>
+        </view>
+      </view>
+
+      <view class="feature-card feature-card--honor" @click="goHonor">
+        <view class="feature-card__head">
+          <view class="feature-card__title-row">
+            <view class="feature-card__icon">
+              <uni-icons type="medal" size="28" color="#ffffff" />
+            </view>
+            <text class="feature-card__title">荣誉获奖</text>
+          </view>
+          <text class="feature-card__desc">按荣誉级别提交材料，系统自动带出对应积分。</text>
+          <text class="feature-card__meta">四级荣誉一键申报</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="themed-card quick-guide">
+      <text class="card-kicker">使用说明</text>
+      <text class="card-title-main">按步骤操作，填写过程更省心</text>
+      <view class="guide-list">
+        <view class="guide-item">
+          <text class="guide-index">01</text>
+          <text class="guide-text">选择对应业务模块，查看积分说明后进入申报。</text>
+        </view>
+        <view class="guide-item">
+          <text class="guide-index">02</text>
+          <text class="guide-text">按页面提示填写时间、地点、内容并上传佐证材料。</text>
+        </view>
+        <view class="guide-item">
+          <text class="guide-index">03</text>
+          <text class="guide-text">提交后等待管理员审核，可在“我的申请”中查看结果。</text>
+        </view>
+      </view>
+    </view>
+
+    <GlobalBottomNav current="index" :show-back="false" />
   </view>
-  <GlobalBottomNav current="index" :showBack="false" />
-</view>
 </template>
 
 <script setup>
@@ -49,7 +85,7 @@ import { useUserStore } from '@/store'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
-/** 首页，展示总积分和两大业务入口。 */
+/** 首页，展示品牌欢迎信息、总积分和两大业务入口。 */
 
 const userStore = useUserStore()
 const totalPoints = computed(() => userStore.totalPoints)
@@ -70,7 +106,6 @@ const goHonor = () => {
 /** 页面显示时同步积分，仅在首次加载时获取数据。 */
 const syncPoints = () => {
   if (initialized) return
-  // 暂时设置默认值，后续可从真实API获取
   userStore.setPoints({
     volunteerPoints: 0,
     honorPoints: 0
@@ -85,149 +120,116 @@ onShow(() => {
 </script>
 
 <style scoped>
-.header {
+.feature-card__head {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 10px 4px 18px;
+  gap: 16px;
+  width: 100%;
 }
 
-.app-title {
-  font-size: 24px;
-  font-weight: 700;
-  text-align: center;
-  color: #0f172a;
-}
-
-.points-card {
-  border-radius: 16px;
-  padding: 18px 20px;
+.feature-card__title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border: 1px solid #e2e8f0;
+  gap: 16px;
+  width: 100%;
 }
 
-.points-label {
-  font-size: 17px;
-  color: #334155;
-}
-
-.points-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #2563eb;
-}
-
-.welcome-card {
-  background: linear-gradient(135deg, #1677ff, #5b8cff);
-  border-radius: 16px;
-  padding: 20px 24px;
-  margin-bottom: 18px;
-  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.2);
-}
-
-.welcome-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.welcome-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.6;
-}
-
-.entry-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.entry-card {
-  border-radius: 16px;
-  padding: 18px 18px 18px 24px;
-  min-height: 112px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
+.feature-card__icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.18);
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.04);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.entry-card:active {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.12),
-    0 4px 8px rgba(0, 0, 0, 0.06);
-}
-
-.entry-card__decoration {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  border-radius: 6px 0 0 6px;
-}
-
-.entry-card__decoration--red {
-  background: linear-gradient(180deg, #ff4d4f, #ff7875);
-}
-
-.entry-card__decoration--yellow {
-  background: linear-gradient(180deg, #faad14, #ffc53d);
-}
-
-.entry-content {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex: 1;
-}
-
-.entry-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-  border-radius: 12px;
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 18px rgba(18, 67, 140, 0.12);
   flex-shrink: 0;
 }
 
-.entry-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.feature-card__title {
+  margin-top: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
   flex: 1;
 }
 
-.entry-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.entry-desc {
+.feature-card__desc {
+  margin-top: 0;
   font-size: 14px;
-  color: #64748b;
-  line-height: 1.5;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 100%;
 }
 
-.entry-card :deep(.u-button) {
-  min-width: 132px;
+.feature-card__meta {
+  margin-top: 0;
+  width: fit-content;
+  min-width: 176px;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.feature-card {
+  min-height: 182px;
+  padding: 20px 22px 12px;
+}
+
+.feature-card::after {
+  left: 18px;
+  bottom: 8px;
+  width: 72px;
+  height: 72px;
+  opacity: 0.18;
+}
+
+.quick-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.guide-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.guide-index {
+  min-width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(29, 99, 216, 0.14), rgba(21, 164, 144, 0.16));
+  color: #1648a5;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-text {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #35516f;
+}
+
+.hero-pill__value--small {
+  font-size: 20px;
+  line-height: 1.2;
 }
 </style>

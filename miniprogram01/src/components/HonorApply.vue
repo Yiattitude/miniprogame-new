@@ -1,91 +1,65 @@
-﻿<template>
-  <view class="page page-with-nav">
-    <view class="page-header">
-      <text class="page-title">{{ levelInfo?.name || '荣誉获奖' }}申报</text>
+<template>
+  <view class="page page-with-nav page-shell page-shell--honor page-shell--form">
+    <view class="page-hero page-hero--honor">
+      <view class="hero-badge">
+        <uni-icons type="medal" size="16" color="#ffffff" />
+        <text>{{ levelInfo?.name || '荣誉获奖' }}申报</text>
+      </view>
+      <text class="hero-title">荣誉信息一次填写完成，系统自动带出固定积分</text>
+      <text class="hero-subtitle"
+        >请按真实获奖情况填写名称、时间和授奖单位，并上传佐证材料后提交。</text
+      >
     </view>
 
-    <view class="form-container">
-      <view class="form-card">
-        <!-- 荣誉获奖名称 -->
-        <view class="form-item">
-          <view class="form-label">
-            <text class="required">*</text>
-            <text class="label-text">荣誉获奖名称</text>
-          </view>
-          <input
-            class="form-input"
-            v-model="form.title"
-            placeholder="请填写荣誉称号全称"
-            placeholder-class="input-placeholder"
-          />
-        </view>
+    <view class="themed-form-card">
+      <view class="field-shell">
+        <text class="field-label"><text class="required">*</text> 荣誉获奖名称</text>
+        <input
+          v-model="form.title"
+          class="native-input"
+          placeholder="请填写荣誉称号全称"
+          placeholder-class="input-placeholder"
+        />
+      </view>
 
-        <!-- 获取时间 -->
-        <view class="form-item">
-          <view class="form-label">
-            <text class="required">*</text>
-            <text class="label-text">获取时间</text>
-          </view>
-          <view class="form-input-wrapper" @click="showTimePicker = true">
-            <input
-              class="form-input custom-input"
-              v-model="form.time"
-              placeholder="选择日期"
-              placeholder-class="input-placeholder"
-              disabled
-            />
-            <uni-icons type="calendar" size="20" color="#c1c1ff" class="calendar-icon"></uni-icons>
-          </view>
+      <view class="field-shell">
+        <text class="field-label"><text class="required">*</text> 获取时间</text>
+        <view class="picker-input-theme" @click="showTimePicker = true">
+          <text>{{ form.time || '请选择日期' }}</text>
+          <uni-icons type="calendar" size="18" color="#7f95a9" />
         </view>
+      </view>
 
-        <!-- 授奖单位 -->
-        <view class="form-item">
-          <view class="form-label">
-            <text class="required">*</text>
-            <text class="label-text">授奖单位</text>
-          </view>
-          <input
-            class="form-input"
-            v-model="form.organization"
-            placeholder="请填写颁发单位全称"
-            placeholder-class="input-placeholder"
-          />
-        </view>
+      <view class="field-shell">
+        <text class="field-label"><text class="required">*</text> 授奖单位</text>
+        <input
+          v-model="form.organization"
+          class="native-input"
+          placeholder="请填写颁发单位全称"
+          placeholder-class="input-placeholder"
+        />
+      </view>
 
-        <!-- 荣誉积分 -->
-        <view class="form-item">
-          <view class="form-label">
-            <text class="required">*</text>
-            <text class="label-text">荣誉积分</text>
-          </view>
-          <input
-            class="form-input disabled-input"
-            v-model="form.pointsDisplay"
-            disabled
-          />
-          <text class="form-hint">固定积分，不可修改</text>
-        </view>
+      <view class="field-shell">
+        <text class="field-label"><text class="required">*</text> 荣誉积分</text>
+        <input v-model="form.pointsDisplay" class="native-input native-input--disabled" disabled />
+        <text class="field-helper">当前荣誉级别对应固定积分，不可修改。</text>
+      </view>
 
-        <!-- 上传佐证材料 -->
-        <view class="form-item upload-item">
-          <view class="form-label">
-            <text class="required">*</text>
-            <text class="label-text">上传佐证材料</text>
-          </view>
-          <view class="upload-wrapper">
-            <UploadImage v-model="form.files" />
-            <view class="upload-placeholder" v-if="!form.files || form.files.length === 0">
-              <uni-icons type="wallet" size="32" color="#eab308"></uni-icons>
-              <text class="upload-text">上传证书照片</text>
-            </view>
+      <view class="field-shell">
+        <text class="field-label"><text class="required">*</text> 上传佐证材料</text>
+        <text class="field-helper">请上传证书、奖状或其他可佐证的图片材料。</text>
+        <view class="upload-shell upload-shell--honor">
+          <UploadImage v-model="form.files" />
+          <view v-if="!form.files || form.files.length === 0" class="upload-placeholder">
+            <uni-icons type="medal" size="30" color="#cc8a11" />
+            <text class="upload-text">上传证书照片或证明材料</text>
           </view>
         </view>
       </view>
 
       <view class="action-group">
-        <view class="btn-primary" @click="handleSubmit">
-          <text class="btn-text">提交申报</text>
-        </view>
+        <u-button type="primary" text="提交申报" size="large" @click="handleSubmit" />
       </view>
     </view>
 
@@ -143,7 +117,7 @@ watchEffect(() => {
   }
 })
 
-/** 格式化日期为 YYYY-MM-DD 格式（UI图中只显示日期）。 */
+/** 格式化日期为 YYYY-MM-DD 格式。 */
 const formatDate = (date) => {
   const pad = (num) => String(num).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -180,13 +154,12 @@ const handleSubmit = async () => {
         url: '/honor/submit',
         method: 'POST',
         data: {
-        levelId: props.levelId,
-        title: form.title.trim(),
-        time: form.time,
-        organization: form.organization.trim(),
-        points: Number(form.points),
-        // 仅提交云端 fileID，确保管理员审核时能查看到真实附件。
-        files: form.files.map((item) => item?.fileID || '').filter(Boolean)
+          levelId: props.levelId,
+          title: form.title.trim(),
+          time: form.time,
+          organization: form.organization.trim(),
+          points: Number(form.points),
+          files: form.files.map((item) => item?.url || item?.fileID || '').filter(Boolean)
         }
       }),
       {}
@@ -208,172 +181,62 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page {
-  background-color: #f5f6fa;
-  min-height: 100vh;
-  padding-bottom: 80px;
-}
-
-.page-header {
-  padding: 30px 20px 20px;
-  text-align: center;
-}
-
-.page-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  letter-spacing: 1px;
-}
-
-.form-container {
-  padding: 0 16px 20px;
-}
-
-.form-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.form-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .required {
-  color: #d81e06;
-  font-size: 18px;
-  font-weight: bold;
-  line-height: 1;
-  padding-top: 4px;
+  color: #c85b51;
 }
 
-.label-text {
-  font-size: 17px;
-  color: #333333;
-  font-weight: 800;
-}
-
-.form-input {
+.native-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #333333;
-  background: #ffffff;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid #dbe7f2;
+  background: #f9fbff;
   box-sizing: border-box;
-  height: 48px;
+  color: #12304e;
+  font-size: 16px;
 }
 
-.form-input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.custom-input {
-  background: transparent;
-  color: #333333;
-  padding-right: 40px;
-}
-
-.calendar-icon {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-.disabled-input {
-  background: #f4f4f5;
-  color: #555555;
-  border-color: #e4e4e7;
-}
-
-.form-hint {
-  font-size: 15px;
-  color: #a1a1aa;
+.native-input--disabled {
+  color: #5f7992;
+  background: #f3f7fb;
 }
 
 .input-placeholder {
-  color: #aaaaaa;
+  color: #8ba0b5;
 }
 
-.upload-wrapper {
+.upload-shell {
   position: relative;
-  width: 100%;
-  min-height: 120px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 136px;
+  border-radius: 20px;
+  border: 2px dashed #c6d7e8;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff8ee 100%);
   overflow: hidden;
 }
 
-::v-deep .upload-wrapper .u-upload {
-  width: 100%;
-  padding: 16px;
+.upload-shell--honor {
+  background: linear-gradient(180deg, #f8fbff 0%, #fff7ea 100%);
 }
 
 .upload-placeholder {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  z-index: -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   pointer-events: none;
-  background: #fdfdfd;
 }
 
 .upload-text {
   font-size: 15px;
-  color: #7B7898;
+  color: #35516f;
 }
 
 .action-group {
-  margin-top: 30px;
   display: flex;
-}
-
-.btn-primary {
-  flex: 1;
-  background: #0076FF;
-  border-radius: 12px;
-  padding: 14px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.btn-text {
-  font-size: 17px;
-  font-weight: bold;
-  color: #ffffff;
 }
 </style>
-<<<<<<< HEAD
-
-
-=======
-
-
->>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb

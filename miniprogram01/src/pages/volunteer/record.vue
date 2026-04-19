@@ -1,42 +1,44 @@
-﻿<template>
-  <view class="page page-with-nav">
-    <view class="page-header">
-      <text class="page-title">{{ pageTitle }}</text>
+<template>
+  <view class="page page-with-nav page-shell page-shell--volunteer">
+    <view class="page-hero">
+      <view class="hero-badge">
+        <uni-icons type="calendar" size="16" color="#ffffff" />
+        <text>志愿记录</text>
+      </view>
+      <text class="hero-title">{{ pageTitle }}</text>
+      <text class="hero-subtitle">支持按年度查看该模块下的打卡记录，点击单条可查看审核状态和详细内容。</text>
     </view>
 
-    <view class="filter-row">
-      <view class="year-selector" @click="showYearPicker = true">
-        <text class="year-text">{{ selectedYear }}年度 ▼</text>
+    <view class="themed-card record-filter-card">
+      <text class="card-kicker">年度筛选</text>
+      <view class="picker-input-theme" @click="showYearPicker = true">
+        <text>{{ selectedYear }}年度</text>
+        <uni-icons type="bottom" size="16" color="#7f95a9" />
       </view>
     </view>
 
-    <view v-if="records.length > 0" class="record-list">
-      <view v-for="record in records" :key="record.id" class="record-card" @click="showDetail(record)">
-        <view class="card-header">
-          <text class="record-title">{{ record.title }}</text>
-          <text class="record-points">+ {{ record.approvedPoints || record.points || 0 }}分</text>
-        </view>
-        <view class="card-body">
-          <text class="record-time">{{ record.activityTime }}</text>
-        </view>
-        <view class="card-footer">
-          <text class="status-badge" :class="getBadgeClass(record.statusText)">
-            {{ record.statusText }}
-          </text>
+    <view v-if="records.length > 0" class="simple-list">
+      <view v-for="record in records" :key="record.id" class="list-row-card" @click="showDetail(record)">
+        <view class="list-row-card__body">
+          <view class="record-card__head">
+            <text class="list-row-card__title">{{ record.title }}</text>
+            <text class="record-card__points">+ {{ record.approvedPoints || record.points || 0 }} 分</text>
+          </view>
+          <text class="list-row-card__desc">{{ record.activityTime }}</text>
+          <text class="list-row-card__meta">{{ record.statusText }}</text>
         </view>
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">当前年度暂无打卡记录</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="calendar" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">当前年度暂无打卡记录</text>
+      <text class="empty-state-pro__desc">可以切换其他年度查看，或返回上一步继续发起新的志愿服务申报。</text>
     </view>
 
-    <u-picker
-      :show="showYearPicker"
-      :columns="[yearOptions]"
-      @confirm="onYearConfirm"
-      @cancel="showYearPicker = false"
-    />
+    <u-picker :show="showYearPicker" :columns="[yearOptions]" @confirm="onYearConfirm" @cancel="showYearPicker = false" />
 
     <view v-if="selectedRecord" class="detail-mask" @click.self="closeDetail">
       <view class="detail-panel">
@@ -48,32 +50,23 @@
           </view>
           <view class="detail-row">
             <text class="detail-label">活动地点</text>
-            <text class="detail-text">{{ selectedRecord.location }}</text>
+            <text class="detail-text">{{ selectedRecord.location || '未填写' }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">参与内容</text>
-            <text class="detail-text">{{ selectedRecord.content }}</text>
+            <text class="detail-text">{{ selectedRecord.content || '未填写' }}</text>
           </view>
           <view class="detail-row">
             <text class="detail-label">审核状态</text>
             <text class="detail-text">{{ selectedRecord.statusText }}</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.rejectReason">
+          <view v-if="selectedRecord.rejectReason" class="detail-row">
             <text class="detail-label">驳回原因</text>
-            <text class="detail-text">{{ selectedRecord.rejectReason }}</text>
+            <text class="detail-text warning-text">{{ selectedRecord.rejectReason }}</text>
           </view>
-          <view class="detail-row" v-if="selectedRecord.evidenceFiles && selectedRecord.evidenceFiles.length">
+          <view v-if="selectedRecord.evidenceFiles && selectedRecord.evidenceFiles.length" class="detail-row">
             <text class="detail-label">佐证材料</text>
-            <view class="evidence-list">
-              <text
-                v-for="(file, fileIndex) in selectedRecord.evidenceFiles"
-                :key="`${selectedRecord.id}-evidence-${fileIndex}`"
-                class="evidence-item"
-                @click="openEvidenceFile(file)"
-              >
-                {{ resolveEvidenceName(file, fileIndex) }}
-              </text>
-            </view>
+            <text class="detail-text">{{ selectedRecord.evidenceFiles.join('、') }}</text>
           </view>
         </view>
 
@@ -92,10 +85,10 @@ import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { fetchVolunteerRecords } from '@/api/volunteer'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast } from '@/utils/feedback'
 import { getVolunteerModule } from '@/utils/rules'
-import { previewCloudFile, resolveFileName } from '@/utils/upload'
 
 /** 志愿服务打卡记录页，支持按年度查看审核通过记录。 */
 
@@ -143,8 +136,8 @@ onLoad((options) => {
 })
 
 /** 切换年份后刷新记录列表。 */
-const onYearConfirm = (value) => {
-  selectedYear.value = value?.value?.[0] || selectedYear.value
+const onYearConfirm = ({ value }) => {
+  selectedYear.value = value?.[0] || selectedYear.value
   showYearPicker.value = false
   loadRecords()
 }
@@ -154,31 +147,9 @@ const showDetail = (record) => {
   selectedRecord.value = record
 }
 
-/** 将附件字段转换为更易读的文件名。 */
-const resolveEvidenceName = (file, index) => {
-  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
-  const name = typeof file === 'object' ? file?.name || '' : ''
-  return name || resolveFileName(fileRef) || `附件${index + 1}`
-}
-
-/** 打开打卡详情中的佐证材料。 */
-const openEvidenceFile = async (file) => {
-  const fileRef = typeof file === 'string' ? file : file?.fileID || file?.url || ''
-  await previewCloudFile(fileRef, {
-    fileName: typeof file === 'object' ? file?.name || '' : ''
-  })
-}
-
 /** 关闭记录详情。 */
 const closeDetail = () => {
   selectedRecord.value = null
-}
-
-const getBadgeClass = (status) => {
-  if (status === '已通过') return 'badge-success'
-  if (status === '待审核') return 'badge-pending'
-  if (status === '已驳回') return 'badge-reject'
-  return 'badge-default'
 }
 
 /** 页面回显时刷新最新记录。 */
@@ -188,204 +159,79 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page {
-  background-color: #f5f6fa;
-  min-height: 100vh;
-  padding-bottom: 80px;
-}
-
-.page-header {
-  padding: 30px 20px 20px;
-  text-align: center;
-}
-
-.page-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  letter-spacing: 1px;
-}
-
-.filter-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 16px;
-  margin-bottom: 16px;
-}
-
-.year-selector {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-}
-
-.year-text {
-  font-size: 15px;
-  color: #333333;
-}
-
-.record-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0 16px 20px;
-}
-
-.record-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 20px;
+.record-filter-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.evidence-list {
+.record-card__head {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.evidence-item {
-  font-size: 13px;
-  color: #0076ff;
-  text-decoration: underline;
-  line-height: 1.6;
-}
-
-.card-header {
-  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
+  gap: 12px;
 }
 
-.record-title {
-  font-size: 19px;
+.record-card__points {
+  font-size: 18px;
   font-weight: 800;
-  color: #333333;
+  color: #1648a5;
 }
 
-.record-points {
-  font-size: 20px;
-  font-weight: bold;
-  color: #0076FF;
-}
-
-.card-body {
-  margin-top: 4px;
-}
-
-.record-time {
-  font-size: 16px;
-  color: #7B7898;
-}
-
-.card-footer {
-  margin-top: 8px;
-  display: flex;
-}
-
-.status-badge {
-  font-size: 13px;
-  font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-
-.badge-success {
-  background-color: #e6f7eb;
-  color: #00a854;
-}
-
-.badge-pending {
-  background-color: #fff2e8;
-  color: #d88949;
-}
-
-.badge-reject {
-  background-color: #feeceb;
-  color: #ff4d4f;
-}
-
-.badge-default {
-  background-color: #f0f0f0;
-  color: #666666;
-}
-
-.empty-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 40px 20px;
-  margin: 0 16px;
-  text-align: center;
-}
-
-.empty-text {
-  font-size: 15px;
-  color: #999999;
-}
-
-/* 详情弹窗样式 */
 .detail-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(13, 34, 58, 0.44);
   display: flex;
   align-items: flex-end;
-  z-index: 1000;
+  z-index: 30;
 }
 
 .detail-panel {
   width: 100%;
-  max-height: 80vh;
+  max-height: 82vh;
   background: #ffffff;
-  border-radius: 20px 20px 0 0;
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .detail-title {
   font-size: 20px;
   font-weight: 800;
-  color: #333333;
-  margin-bottom: 24px;
-  display: block;
+  color: #12304e;
 }
 
 .detail-grid {
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 30px;
+  gap: 14px;
 }
 
 .detail-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .detail-label {
-  font-size: 14px;
-  color: #999999;
+  font-size: 13px;
+  color: #7f95a9;
 }
 
 .detail-text {
-  font-size: 16px;
-  color: #333333;
+  font-size: 15px;
+  color: #35516f;
+  line-height: 1.75;
+}
+
+.warning-text {
+  color: #c85b51;
 }
 
 .detail-actions {
-  margin-top: 10px;
+  margin-top: 20px;
 }
 </style>
-<<<<<<< HEAD
-
-
-=======
-
-
->>>>>>> 878cd6bb1484add6c8c69c532b51c57c09a991eb

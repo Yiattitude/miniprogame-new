@@ -1,65 +1,123 @@
 <template>
-  <view class="page page-with-nav">
-    <view class="section-title">全量数据导出</view>
-    <text class="helper-text">请选择筛选条件后导出，未填写时默认导出全部真实审核数据。</text>
+  <view class="page page-with-nav page-shell page-shell--admin">
+    <view class="page-hero page-hero--admin">
+      <view class="hero-badge">
+        <uni-icons type="download-filled" size="16" color="#ffffff" />
+        <text>全量数据导出</text>
+      </view>
+      <text class="hero-title">先筛选、后预览，再执行 Excel 导出</text>
+      <text class="hero-subtitle"
+        >支持按年度、模块、审核状态和用户进行筛选，减少导出结果重复核对的工作量。</text
+      >
+    </view>
 
-    <view class="form-card">
-      <view class="form-item">
-        <text class="form-label">年度</text>
-        <picker :range="yearOptions" :value="yearIndex" @change="onYearChange">
-          <view class="picker-input">
-            <text>{{ form.year || '全部年度' }}</text>
-            <uni-icons type="arrow-down" size="16" color="#999999" />
+    <view class="themed-form-card">
+      <u-form :model="form" label-position="top">
+        <view class="field-shell">
+          <text class="field-label">年度</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.year }"
+            @click="showYearPicker = true"
+          >
+            <text>{{ form.year || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
           </view>
-        </picker>
-      </view>
+        </view>
 
-      <view class="form-item">
-        <text class="form-label">模块 / 荣誉级别</text>
-        <picker :range="moduleOptions" :value="moduleIndex" @change="onModuleChange">
-          <view class="picker-input">
-            <text>{{ form.module || '全部类型' }}</text>
-            <uni-icons type="arrow-down" size="16" color="#999999" />
+        <view class="field-shell">
+          <text class="field-label">模块 / 荣誉级别</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.module }"
+            @click="showModulePicker = true"
+          >
+            <text>{{ form.module || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
           </view>
-        </picker>
-      </view>
+        </view>
 
-      <view class="form-item">
-        <text class="form-label">审核状态</text>
-        <picker :range="statusOptions" :value="statusIndex" @change="onStatusChange">
-          <view class="picker-input">
-            <text>{{ form.status || '全部状态' }}</text>
-            <uni-icons type="arrow-down" size="16" color="#999999" />
+        <view class="field-shell">
+          <text class="field-label">审核状态</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.status }"
+            @click="showStatusPicker = true"
+          >
+            <text>{{ form.status || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
           </view>
-        </picker>
-      </view>
+        </view>
 
-      <view class="form-item">
-        <text class="form-label">用户关键词</text>
-        <u-input v-model="form.keyword" placeholder="请输入用户姓名或邀请码" clearable @change="loadPreview" />
-      </view>
+        <view class="field-shell">
+          <text class="field-label">用户</text>
+          <view
+            class="picker-input-theme"
+            :class="{ 'picker-input-theme--muted': !form.keyword }"
+            @click="showUserPicker = true"
+          >
+            <text>{{ form.keyword || '请选择' }}</text>
+            <uni-icons type="bottom" size="16" color="#7f95a9" />
+          </view>
+        </view>
+      </u-form>
 
       <view class="action-group">
-        <u-button type="primary" text="导出文件" size="large" @click="handleExport" />
+        <u-button type="primary" text="导出 Excel" size="large" @click="handleExport" />
         <u-button type="info" plain text="重置筛选" size="large" @click="handleReset" />
       </view>
     </view>
 
-    <view class="section-title">导出预览</view>
-    <text class="preview-desc">当前筛选结果共 {{ previewRows.length }} 条</text>
+    <view class="section-heading">
+      <text class="section-heading__title">导出预览</text>
+      <text class="section-heading__desc">当前共 {{ previewRows.length }} 条</text>
+    </view>
 
-    <view v-if="previewRows.length > 0" class="preview-list">
-      <view v-for="item in previewRows" :key="item.id" class="preview-card">
-        <text class="preview-name">{{ item.title }}</text>
-        <text class="preview-meta">{{ item.applicantName }} · {{ item.typeLabel }}</text>
-        <text class="preview-meta">{{ item.moduleLabel }} · {{ item.statusText }} · {{ item.scoreText }}</text>
-        <text class="preview-meta">提交时间：{{ item.submitTime }}</text>
+    <view v-if="previewRows.length > 0" class="simple-list">
+      <view v-for="item in previewRows" :key="item.id" class="list-row-card">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">{{ item.title }}</text>
+          <text class="list-row-card__desc">{{ item.applicantName }} · {{ item.typeLabel }}</text>
+          <text class="list-row-card__desc"
+            >{{ item.moduleLabel }} · {{ item.statusText }} · {{ item.scoreText }}</text
+          >
+          <text class="list-row-card__meta">提交时间：{{ item.submitTime }}</text>
+        </view>
       </view>
     </view>
 
-    <view v-else class="empty-card">
-      <text class="empty-text">当前筛选条件下没有可导出的记录</text>
+    <view v-else class="empty-state-pro">
+      <view class="empty-state-pro__icon">
+        <uni-icons type="download-filled" size="30" color="#1648a5" />
+      </view>
+      <text class="empty-state-pro__title">当前筛选下暂无可导出记录</text>
+      <text class="empty-state-pro__desc">可调整筛选条件后再次查看预览结果。</text>
     </view>
+
+    <u-picker
+      :show="showYearPicker"
+      :columns="[yearOptions]"
+      @confirm="onYearConfirm"
+      @cancel="showYearPicker = false"
+    />
+    <u-picker
+      :show="showModulePicker"
+      :columns="[moduleOptions]"
+      @confirm="onModuleConfirm"
+      @cancel="showModulePicker = false"
+    />
+    <u-picker
+      :show="showStatusPicker"
+      :columns="[statusOptions]"
+      @confirm="onStatusConfirm"
+      @cancel="showStatusPicker = false"
+    />
+    <u-picker
+      :show="showUserPicker"
+      :columns="[userOptions]"
+      @confirm="onUserConfirm"
+      @cancel="showUserPicker = false"
+    />
 
     <GlobalBottomNav current="admin" />
   </view>
@@ -67,23 +125,36 @@
 
 <script setup>
 import { onShow } from '@dcloudio/uni-app'
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 import { exportExcel, fetchAuditList } from '@/api/admin'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 import { unwrapApiData, resolveApiErrorMessage } from '@/utils/api'
 import { showErrorToast, showSuccessToast } from '@/utils/feedback'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import { downloadRemoteFile, getCloudTempUrl, saveLocalFile } from '@/utils/upload'
 
 /** 管理后台导出页，按筛选条件预览并导出真实审核数据。 */
-const yearOptions = ['全部年度']
-const currentYear = new Date().getFullYear()
-for (let i = 0; i < 6; i += 1) {
-  yearOptions.push(`${currentYear - i}`)
-}
 
+const form = reactive({
+  year: '',
+  module: '',
+  status: '',
+  keyword: ''
+})
+
+const previewRows = ref([])
+const showYearPicker = ref(false)
+const showModulePicker = ref(false)
+const showStatusPicker = ref(false)
+const showUserPicker = ref(false)
+
+/** 最近五年的年度选项。 */
+const currentYear = new Date().getFullYear()
+const yearOptions = computed(() =>
+  Array.from({ length: 5 }, (_, index) => `${currentYear - index}`)
+)
+
+/** 模块/荣誉级别选项。 */
 const moduleOptions = [
-  '全部类型',
   '传承红色文化',
   '参与基层治理',
   '服务企业发展',
@@ -95,25 +166,17 @@ const moduleOptions = [
   '厂处级荣誉'
 ]
 
-const statusOptions = ['全部状态', '待审核', '已审核', '已驳回']
+/** 审核状态选项。 */
+const statusOptions = ['待审核', '已审核', '已驳回']
 
-const form = reactive({
-  year: '',
-  module: '',
-  status: '',
-  keyword: ''
-})
-
-const previewRows = ref([])
-
-/** 计算 picker 当前索引，保证重置时能回到“全部”。 */
-const yearIndex = computed(() => Math.max(yearOptions.indexOf(form.year || '全部年度'), 0))
-const moduleIndex = computed(() => Math.max(moduleOptions.indexOf(form.module || '全部类型'), 0))
-const statusIndex = computed(() => Math.max(statusOptions.indexOf(form.status || '全部状态'), 0))
+/** 用户选项，当前使用前端占位数据。 */
+const userOptions = ['全部用户', '张三', '李四', '王五', '赵六']
 
 /** 标准化状态输入，兼容中文与英文筛选。 */
 const normalizeStatus = (value = '') => {
-  const raw = String(value || '').trim().toLowerCase()
+  const raw = String(value || '')
+    .trim()
+    .toLowerCase()
   if (!raw) return ''
   if (raw === 'pending' || raw.includes('待')) return 'pending'
   if (raw === 'approved' || raw.includes('通过') || raw.includes('审核')) return 'approved'
@@ -126,28 +189,31 @@ const buildQuery = () => ({
   year: form.year.trim(),
   module: form.module.trim(),
   status: normalizeStatus(form.status),
-  keyword: form.keyword.trim()
+  keyword: form.keyword === '全部用户' ? '' : form.keyword.trim()
 })
 
-/** 年度切换。 */
-const onYearChange = (event) => {
-  const value = yearOptions[Number(event.detail.value || 0)] || '全部年度'
-  form.year = value === '全部年度' ? '' : value
-  loadPreview()
+/** 年度选择确认。 */
+const onYearConfirm = ({ value }) => {
+  form.year = value?.[0] || ''
+  showYearPicker.value = false
 }
 
-/** 模块 / 荣誉级别切换。 */
-const onModuleChange = (event) => {
-  const value = moduleOptions[Number(event.detail.value || 0)] || '全部类型'
-  form.module = value === '全部类型' ? '' : value
-  loadPreview()
+/** 模块选择确认。 */
+const onModuleConfirm = ({ value }) => {
+  form.module = value?.[0] || ''
+  showModulePicker.value = false
 }
 
-/** 审核状态切换。 */
-const onStatusChange = (event) => {
-  const value = statusOptions[Number(event.detail.value || 0)] || '全部状态'
-  form.status = value === '全部状态' ? '' : value
-  loadPreview()
+/** 状态选择确认。 */
+const onStatusConfirm = ({ value }) => {
+  form.status = value?.[0] || ''
+  showStatusPicker.value = false
+}
+
+/** 用户选择确认。 */
+const onUserConfirm = ({ value }) => {
+  form.keyword = value?.[0] || ''
+  showUserPicker.value = false
 }
 
 /** 拉取全部预览分页数据。 */
@@ -198,45 +264,19 @@ const loadPreview = async () => {
   }
 }
 
-/** 调用后端导出接口，并直接打开导出的真实文件。 */
+/** 调用后端导出接口并提示文件信息。 */
 const handleExport = async () => {
   try {
-    uni.showLoading({ title: '导出中', mask: true })
     const data = unwrapApiData(await exportExcel(buildQuery()), {})
-    uni.hideLoading()
-
-    if (Number(data.total || 0) === 0) {
-      showSuccessToast('当前筛选条件下暂无可导出数据')
-      return
-    }
-
-    if (!data.fileID) {
-      throw new Error('导出文件生成失败')
-    }
-
     showSuccessToast(`导出完成，共 ${Number(data.total || 0)} 条`)
-    const tempUrl = await getCloudTempUrl(data.fileID)
-    const tempFilePath = await downloadRemoteFile(tempUrl)
-    const savedFilePath = await saveLocalFile(tempFilePath)
-    try {
-      await new Promise((resolve, reject) => {
-        uni.openDocument({
-          filePath: savedFilePath,
-          fileType: 'xlsx',
-          showMenu: true,
-          success: () => resolve(true),
-          fail: (error) => reject(error || new Error('文件打开失败'))
-        })
-      })
-    } catch (openError) {
+    if (data.fileID) {
       uni.showModal({
-        title: '导出成功',
-        content: `Excel 文件已保存到本地，但系统打开失败。您可以稍后在小程序本地文件中查看。\n\n保存路径：${savedFilePath}`,
+        title: '导出文件',
+        content: `文件 ID：${data.fileID}`,
         showCancel: false
       })
     }
   } catch (error) {
-    uni.hideLoading()
     showErrorToast(resolveApiErrorMessage(error, '导出失败，请稍后重试'))
   }
 }
@@ -250,120 +290,23 @@ const handleReset = () => {
   loadPreview()
 }
 
+watch(
+  () => [form.year, form.module, form.status, form.keyword],
+  () => {
+    loadPreview()
+  }
+)
+
 onShow(() => {
   loadPreview()
 })
 </script>
 
 <style scoped>
-.form-card {
-  border-radius: 16px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 18px;
-  background: #ffffff;
-}
-
-.form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.form-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-}
-
 .action-group {
-  margin-top: 24px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.helper-text {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.preview-desc {
-  font-size: 14px;
-  color: #64748b;
-  margin-bottom: 16px;
-}
-
-.preview-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.preview-card {
-  border-radius: 16px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-}
-
-.preview-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-  line-height: 1.7;
-}
-
-.preview-meta {
-  font-size: 13px;
-  color: #475569;
-}
-
-.empty-card {
-  border-radius: 16px;
-  padding: 28px 20px;
-  text-align: center;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-}
-
-.empty-text {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-.section-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  margin: 20px 0;
-}
-
-.page-with-nav {
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
-}
-
-.picker-input {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 48px;
-  padding: 0 16px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  background: #ffffff;
-  box-sizing: border-box;
-}
-
-.picker-input text {
-  font-size: 16px;
-  color: #333333;
 }
 </style>

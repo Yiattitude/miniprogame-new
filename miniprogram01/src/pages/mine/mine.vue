@@ -1,59 +1,85 @@
 <template>
-  <view class="page page-with-tabbar">
+  <view class="page page-with-tabbar page-shell page-shell--mine">
+    <view class="page-hero page-hero--mine">
+      <view class="hero-badge">
+        <uni-icons type="person-filled" size="16" color="#ffffff" />
+        <text>我的积分中心</text>
+      </view>
+      <text class="hero-title">积分清晰可见，常用功能一目了然</text>
+      <text class="hero-subtitle"
+        >支持查看总积分、年度趋势与个人资料入口，便于日常查询和后续申报。</text
+      >
 
-
-    <!-- 顶部总积分大卡片 -->
-    <view class="points-container">
-      <view class="points-card">
-        <text class="points-title">总积分</text>
-        <text class="points-total">{{ userStore.totalPoints }}</text>
-        
-        <view class="divider-horizontal"></view>
-        
-        <view class="points-breakdown">
-          <view class="points-item">
-            <text class="label">志愿服务</text>
-            <text class="value">{{ userStore.volunteerPoints }}</text>
+      <view class="mine-score-board">
+        <view class="mine-score-board__main">
+          <text class="mine-score-board__label">总积分</text>
+          <text class="mine-score-board__value">{{ userStore.totalPoints }}</text>
+        </view>
+        <view class="mine-score-board__split"></view>
+        <view class="mine-score-board__aside">
+          <view class="mine-score-chip">
+            <text class="mine-score-chip__label">志愿服务</text>
+            <text class="mine-score-chip__value">{{ userStore.volunteerPoints }}</text>
           </view>
-          <view class="divider-vertical"></view>
-          <view class="points-item">
-            <text class="label">荣誉获奖</text>
-            <text class="value">{{ userStore.honorPoints }}</text>
+          <view class="mine-score-chip mine-score-chip--accent">
+            <text class="mine-score-chip__label">荣誉获奖</text>
+            <text class="mine-score-chip__value">{{ userStore.honorPoints }}</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 年度积分趋势卡片 -->
-    <view class="chart-container">
-      <view class="white-card">
-        <Chart :refresh-key="chartRefreshKey" :trend-data="trendData" />
+    <view class="glass-card">
+      <Chart :refresh-key="chartRefreshKey" :trend-data="trendData" />
+    </view>
+
+    <view class="section-heading">
+      <text class="section-heading__title">常用功能</text>
+      <text class="section-heading__desc">点击进入对应页面</text>
+    </view>
+
+    <view class="simple-list">
+      <view class="list-row-card" @click="goTo('/pages/application/index')">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">我的申请</text>
+          <text class="list-row-card__desc"
+            >查看待审核、已通过和已驳回记录，及时掌握处理进度。</text
+          >
+          <text class="list-row-card__meta">申报进度查询</text>
+        </view>
+        <uni-icons type="right" size="18" color="#1648a5" />
+      </view>
+
+      <view class="list-row-card" @click="showProfile">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">个人信息</text>
+          <text class="list-row-card__desc">查看脱敏后的姓名、手机号等信息，保障隐私安全。</text>
+          <text class="list-row-card__meta">敏感信息已脱敏</text>
+        </view>
+        <uni-icons type="right" size="18" color="#1648a5" />
+      </view>
+
+      <view class="list-row-card" @click="goTo('/pages/privacy/index')">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">隐私设置</text>
+          <text class="list-row-card__desc">查看授权与隐私说明，确保小程序使用更放心。</text>
+          <text class="list-row-card__meta">授权与说明</text>
+        </view>
+        <uni-icons type="right" size="18" color="#1648a5" />
+      </view>
+
+      <view class="list-row-card list-row-card--logout" @click="logout">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">退出登录</text>
+          <text class="list-row-card__desc">退出当前账号并返回登录与隐私授权页面。</text>
+          <text class="list-row-card__meta list-row-card__meta--danger">安全退出</text>
+        </view>
+        <uni-icons type="right" size="18" color="#c85b51" />
       </view>
     </view>
 
-    <!-- 功能入口 -->
-    <view class="list-container">
-      <view class="module-list">
-        <view class="module-card" @click="goTo('/pages/application/index')">
-          <text class="module-title">我的申请</text>
-          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
-        </view>
-        <view class="module-card" @click="showProfile">
-          <text class="module-title">个人信息</text>
-          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
-        </view>
-        <view class="module-card" @click="goTo('/pages/privacy/index')">
-          <text class="module-title">隐私设置</text>
-          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
-        </view>
-        <view class="module-card" @click="logout">
-          <text class="module-title">退出登录</text>
-          <uni-icons type="right" size="16" color="#c8c9cc"></uni-icons>
-        </view>
-      </view>
-    </view>
+    <GlobalBottomNav current="mine" :show-back="false" />
   </view>
-  <GlobalBottomNav current="mine" :showBack="false" />
 </template>
 
 <script setup>
@@ -69,7 +95,9 @@ import Chart from '@/components/Chart.vue'
 import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
 
-/** 我的页面，展示积分、个人信息与订阅状态。 */
+const isAdminRole = (role) => role === 'admin' || role === 'super-admin'
+
+/** 我的页面，展示积分、趋势图和常用功能入口。 */
 
 const userStore = useUserStore()
 const chartRefreshKey = ref(0)
@@ -118,7 +146,7 @@ const syncProfile = async () => {
       role: userInfo.role || '',
       submittedAt: new Date().toISOString()
     })
-    userStore.setAdmin(userInfo.role === 'admin')
+    userStore.setAdmin(isAdminRole(userInfo.role))
     if (profileData.scoreSummary) {
       const volunteerPoints = Number(profileData.scoreSummary.volunteerPoints || 0)
       const honorPoints = Number(profileData.scoreSummary.honorPoints || 0)
@@ -128,7 +156,7 @@ const syncProfile = async () => {
         honorPoints
       })
 
-      // 使用真实积分生成近 5 年趋势：当前年展示总积分，其余年份为 0（后续可扩展为逐年明细接口）。
+      /** 使用真实积分生成近 5 年趋势，当前年显示总积分。 */
       const currentYear = new Date().getFullYear()
       trendData.value = Array.from({ length: 5 }, (_, index) => {
         const year = currentYear - 4 + index
@@ -154,127 +182,75 @@ onShow(() => {
 </script>
 
 <style scoped>
-.page {
-  background-color: #f5f6fa;
-  min-height: 100vh;
-  padding-bottom: 80px;
-}
-
-.page-header {
-  padding: 30px 20px 20px;
-  text-align: center;
-}
-
-.page-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: #333333;
-  letter-spacing: 1px;
-}
-
-.points-container {
-  padding: 0 16px 20px;
-}
-
-.points-card {
-  background: #2563eb; 
-  border-radius: 16px;
-  padding: 30px 24px;
-  color: #ffffff;
+.mine-score-board {
+  margin-top: 20px;
+  border-radius: 24px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.12);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  gap: 16px;
 }
 
-.points-title {
-  font-size: 17px;
-  opacity: 0.9;
-  margin-bottom: 12px;
-}
-
-.points-total {
-  font-size: 64px;
-  font-weight: bold;
-  line-height: 1;
-  margin-bottom: 30px;
-}
-
-.divider-horizontal {
-  width: 100%;
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.2);
-  margin-bottom: 24px;
-}
-
-.points-breakdown {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.points-item {
+.mine-score-board__main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
 }
 
-.divider-vertical {
+.mine-score-board__label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.mine-score-board__value {
+  margin-top: 10px;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mine-score-board__split {
   width: 1px;
-  height: 40px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.label {
-  font-size: 15px;
-  opacity: 0.9;
-}
-
-.value {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.chart-container, .list-container {
-  padding: 0 16px 20px;
-}
-
-.white-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 20px;
-}
-
-.module-list {
+.mine-score-board__aside {
+  width: 118px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0;
 }
 
-.module-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
+.mine-score-chip {
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.module-title {
-  font-size: 16px;
-  color: #333333;
-  font-weight: 500;
+.mine-score-chip--accent {
+  background: rgba(255, 240, 209, 0.18);
 }
 
-.page-with-tabbar {
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+.mine-score-chip__label {
+  display: block;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.mine-score-chip__value {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.list-row-card--logout {
+  border-color: rgba(216, 181, 181, 0.52);
+}
+
+.list-row-card__meta--danger {
+  background: rgba(200, 91, 81, 0.1);
+  color: #c85b51;
 }
 </style>
-
-
-

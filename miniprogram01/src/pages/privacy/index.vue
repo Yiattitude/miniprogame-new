@@ -1,20 +1,69 @@
 <template>
-  <view class="page page-with-nav">
-    <view class="section-title">隐私设置</view>
-    <view class="summary-card">
-      <text class="summary-title">当前合规状态</text>
-      <text class="summary-text">隐私协议：{{ userStore.privacyAgreed ? '已同意' : '未同意' }}</text>
-      <text class="summary-text">用户认证：{{ userStore.hasRealname ? '已完成' : '未完成' }}</text>
-      <text class="summary-text">消息订阅：{{ subscribeStatusLabel }}</text>
-      <text class="summary-text">相册权限：{{ albumPermissionLabel }}</text>
-      <text class="summary-text">相机权限：{{ cameraPermissionLabel }}</text>
+  <view class="page page-with-nav page-shell page-shell--mine">
+    <view class="page-hero page-hero--mine">
+      <view class="hero-badge">
+        <uni-icons type="locked-filled" size="16" color="#ffffff" />
+        <text>隐私设置</text>
+      </view>
+      <text class="hero-title">隐私、权限与账号状态统一查看</text>
+      <text class="hero-subtitle">便于用户了解当前授权状态、查看隐私保护说明，并在需要时进行系统权限管理。</text>
     </view>
 
-    <u-cell-group>
-      <u-cell title="用户隐私保护指引" isLink @click="openGuide" />
-      <u-cell title="系统权限管理" isLink @click="openPermissions" />
-      <u-cell title="账号注销" @click="confirmCancel" />
-    </u-cell-group>
+    <view class="themed-card">
+      <text class="card-kicker">当前合规状态</text>
+      <text class="card-title-main">已为您汇总当前授权与认证情况</text>
+      <view class="privacy-status-list">
+        <view class="privacy-status-item">
+          <text class="privacy-status-item__label">隐私协议</text>
+          <text class="privacy-status-item__value">{{ userStore.privacyAgreed ? '已同意' : '未同意' }}</text>
+        </view>
+        <view class="privacy-status-item">
+          <text class="privacy-status-item__label">用户认证</text>
+          <text class="privacy-status-item__value">{{ userStore.hasRealname ? '已完成' : '未完成' }}</text>
+        </view>
+        <view class="privacy-status-item">
+          <text class="privacy-status-item__label">消息订阅</text>
+          <text class="privacy-status-item__value">{{ subscribeStatusLabel }}</text>
+        </view>
+        <view class="privacy-status-item">
+          <text class="privacy-status-item__label">相册权限</text>
+          <text class="privacy-status-item__value">{{ albumPermissionLabel }}</text>
+        </view>
+        <view class="privacy-status-item">
+          <text class="privacy-status-item__label">相机权限</text>
+          <text class="privacy-status-item__value">{{ cameraPermissionLabel }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="simple-list">
+      <view class="list-row-card" @click="openGuide">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">用户隐私保护指引</text>
+          <text class="list-row-card__desc">查看平台收集的信息范围、用途、保存期限和您的相关权利说明。</text>
+          <text class="list-row-card__meta">隐私说明详情</text>
+        </view>
+        <uni-icons type="right" size="18" color="#1648a5" />
+      </view>
+
+      <view class="list-row-card" @click="openPermissions">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">系统权限管理</text>
+          <text class="list-row-card__desc">重新开启相册、相机等权限，方便后续上传佐证材料。</text>
+          <text class="list-row-card__meta">跳转系统设置</text>
+        </view>
+        <uni-icons type="right" size="18" color="#1648a5" />
+      </view>
+
+      <view class="list-row-card privacy-danger-card" @click="confirmCancel">
+        <view class="list-row-card__body">
+          <text class="list-row-card__title">账号注销</text>
+          <text class="list-row-card__desc">提交注销申请后，相关个人信息会按规则进入删除或匿名化流程。</text>
+          <text class="list-row-card__meta privacy-danger-card__meta">高敏感操作</text>
+        </view>
+        <uni-icons type="right" size="18" color="#c85b51" />
+      </view>
+    </view>
 
     <GlobalBottomNav current="mine" />
   </view>
@@ -23,6 +72,7 @@
 <script setup>
 import { computed } from 'vue'
 import GlobalBottomNav from '@/components/GlobalBottomNav.vue'
+import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { useUserStore } from '@/store'
 import { getSubscribeStatusLabel } from '@/utils/auth'
 import { showSuccessToast } from '@/utils/feedback'
@@ -65,26 +115,43 @@ const confirmCancel = () => {
 </script>
 
 <style scoped>
-.summary-card {
-  border-radius: 16px;
-  padding: 18px;
-  margin-bottom: 18px;
-  border: 1px solid #dbeafe;
-  background: #f8fbff;
+.privacy-status-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
-.summary-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0f172a;
+.privacy-status-item {
+  min-height: 54px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #dbe7f2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.summary-text {
+.privacy-status-item__label {
   font-size: 15px;
-  color: #334155;
-  line-height: 1.7;
+  color: #35516f;
+  font-weight: 700;
+}
+
+.privacy-status-item__value {
+  font-size: 14px;
+  color: #1648a5;
+  font-weight: 700;
+}
+
+.privacy-danger-card {
+  border-color: rgba(216, 181, 181, 0.56);
+}
+
+.privacy-danger-card__meta {
+  background: rgba(200, 91, 81, 0.1);
+  color: #c85b51;
 }
 </style>
