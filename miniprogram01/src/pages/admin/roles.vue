@@ -304,7 +304,6 @@ const disableTargetUser = async (item) => {
 }
 
 onShow(() => {
-  uni.hideTabBar()
   roleFilter.value = 'all'
   statusFilter.value = 'all'
   refreshUsers()

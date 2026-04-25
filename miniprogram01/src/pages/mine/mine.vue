@@ -103,6 +103,15 @@ const userStore = useUserStore()
 const chartRefreshKey = ref(0)
 const trendData = ref([])
 
+/** 隐藏微信原生 TabBar，避免与页面自定义底部导航重复展示。 */
+const hideNativeTabBar = () => {
+  uni.hideTabBar({
+    fail: () => {
+      // 当前页面若暂未完成 TabBar 注册，静默跳过，避免影响“我的”页面渲染。
+    }
+  })
+}
+
 /** 跳转到指定功能页。 */
 const goTo = (url) => {
   uni.navigateTo({ url })
@@ -173,7 +182,7 @@ const syncProfile = async () => {
 }
 
 onShow(() => {
-  uni.hideTabBar()
+  hideNativeTabBar()
   if (!ensureComplianceReady(userStore, { redirect: true, toast: false })) {
     return
   }
