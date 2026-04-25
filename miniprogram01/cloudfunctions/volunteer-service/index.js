@@ -1265,6 +1265,40 @@ async function getUserByOpenid(openid) {
   return res.data && res.data.length > 0 ? res.data[0] : null
 }
 
+/** 导入场景下按姓名 + 手机号匹配目标用户，不依赖模板传 openid 或身份证号。 */
+async function resolveImportTargetUser(row = {}) {
+  const explicitUserId = String(pickValue(row, ['userId', 'targetUserId', '用户ID'])).trim()
+  if (explicitUserId) {
+    try {
+      const userRes = await db.collection('users').doc(explicitUserId).get()
+      if (userRes?.data?._id) {
+        return userRes.data
+      }
+    } catch (err) {
+      // no-op
+    }
+  }
+
+  const realName = String(pickValue(row, ['realName', 'userName', 'name', '用户姓名'])).trim()
+  const phone = String(pickValue(row, ['phone', 'mobile', '手机号', '手机号码'])).trim()
+
+  if (realName && phone) {
+    const userByNamePhoneRes = await db.collection('users').where({ realName, phone }).limit(2).get()
+    if ((userByNamePhoneRes.data || []).length === 1) {
+      return userByNamePhoneRes.data[0]
+    }
+  }
+
+  if (realName) {
+    const userByNameRes = await db.collection('users').where({ realName }).limit(2).get()
+    if ((userByNameRes.data || []).length === 1) {
+      return userByNameRes.data[0]
+    }
+  }
+
+  return null
+}
+
 async function ensureUser(openid) {
   if (!openid) return null
   const existing = await getUserByOpenid(openid)
@@ -1702,9 +1736,8 @@ async function adminImport(data = {}, openid) {
       const checkedAt =
         parseDateOrNull(pickValue(row, ['activityTime', 'checkedAt', 'time', '时间'])) || new Date()
       const photos = normalizePhotoList(pickValue(row, ['photos', 'proofs', '佐证材料链接']))
-      const targetOpenid = String(
-        pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
-      ).trim()
+      const matchedUser = await resolveImportTargetUser(row)
+      const targetOpenid = String(matchedUser?._openid || '').trim()
       const rowRealName = String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim()
       const rowPhone = String(pickValue(row, ['phone', '手机号'])).trim()
 
@@ -1743,7 +1776,7 @@ async function adminImport(data = {}, openid) {
       importedVolunteer += 1
 
       if (targetOpenid) {
-        const targetUser = await ensureUser(targetOpenid)
+        const targetUser = matchedUser || (await ensureUser(targetOpenid))
         const nextPoints = Number(targetUser.totalPoints || 0) + points
         const nextVolunteerPoints = Number(targetUser.volunteerPoints || 0) + points
         const nextCheckinCount = Number(targetUser.checkinCount || 0) + 1
@@ -1802,9 +1835,8 @@ async function adminImport(data = {}, openid) {
         pickValue(row, ['organization', 'awardOrganization', '授奖单位'])
       ).trim()
       const proofs = normalizePhotoList(pickValue(row, ['proofs', 'files', '佐证材料链接']))
-      const targetOpenid = String(
-        pickValue(row, ['_openid', 'openid', 'userOpenid', '用户openid'])
-      ).trim()
+      const matchedUser = await resolveImportTargetUser(row)
+      const targetOpenid = String(matchedUser?._openid || '').trim()
       const rowRealName = String(pickValue(row, ['userName', 'realName', '用户姓名'])).trim()
       const rowPhone = String(pickValue(row, ['phone', '手机号'])).trim()
 
@@ -1813,8 +1845,8 @@ async function adminImport(data = {}, openid) {
         continue
       }
 
-      let targetUser = null
-      if (targetOpenid) {
+      let targetUser = matchedUser
+      if (!targetUser && targetOpenid) {
         targetUser = await ensureUser(targetOpenid)
       }
 

@@ -16,7 +16,7 @@
         <text class="card-kicker">导入说明</text>
         <text class="card-title-main">上传前请先确认字段格式一致</text>
         <text class="card-text-main"
-          >请选择 `.xlsx` 或 `.xls` 文件，建议先下载模板说明后再导入。</text
+          >请选择 `.xlsx` 或 `.xls` 文件，导入匹配规则为“姓名 + 手机号”，建议先下载模板说明后再导入。</text
         >
       </view>
 
@@ -97,7 +97,7 @@ import UniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 const templateFields = {
   volunteer: [
     '用户姓名',
-    '身份证号',
+    '手机号',
     '模块标识',
     '活动名称',
     '时间',
@@ -106,7 +106,7 @@ const templateFields = {
     '积分',
     '佐证材料链接'
   ],
-  honor: ['用户姓名', '身份证号', '荣誉级别', '荣誉名称', '获取时间', '授奖单位', '佐证材料链接']
+  honor: ['用户姓名', '手机号', '荣誉级别', '荣誉名称', '获取时间', '授奖单位', '佐证材料链接']
 }
 const history = ref([])
 const currentFileName = ref('')
@@ -115,7 +115,7 @@ const currentFileName = ref('')
 const downloadTemplate = () => {
   uni.showModal({
     title: '模板字段说明',
-    content: `志愿服务：${templateFields.volunteer.join('、')}\n\n荣誉获奖：${templateFields.honor.join('、')}`,
+    content: `导入匹配：姓名 + 手机号\n\n志愿服务：${templateFields.volunteer.join('、')}\n\n荣誉获奖：${templateFields.honor.join('、')}`,
     showCancel: false
   })
 }
